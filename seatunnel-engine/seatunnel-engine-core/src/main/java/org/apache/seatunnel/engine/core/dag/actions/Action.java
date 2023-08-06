@@ -17,6 +17,10 @@
 
 package org.apache.seatunnel.engine.core.dag.actions;
 
+import org.apache.seatunnel.api.table.factory.Factory;
+
+import org.apache.commons.lang3.tuple.ImmutablePair;
+
 import lombok.NonNull;
 
 import java.io.Serializable;
@@ -42,4 +46,9 @@ public interface Action extends Serializable {
     Set<URL> getJarUrls();
 
     Config getConfig();
+
+    Set<ImmutablePair<Class<? extends Factory>, String>> getFactoryIdentifiers();
+
+    void setFactoryIdentifiers(
+            Set<ImmutablePair<Class<? extends Factory>, String>> factoryIdentifiers);
 }

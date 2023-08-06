@@ -18,6 +18,7 @@
 package org.apache.seatunnel.engine.client;
 
 import org.apache.seatunnel.api.common.JobContext;
+import org.apache.seatunnel.api.table.factory.Factory;
 import org.apache.seatunnel.common.config.Common;
 import org.apache.seatunnel.common.config.DeployMode;
 import org.apache.seatunnel.engine.common.config.JobConfig;
@@ -46,7 +47,11 @@ public class MultipleTableJobConfigParserTest {
         jobConfig.setJobContext(new JobContext());
         MultipleTableJobConfigParser jobConfigParser =
                 new MultipleTableJobConfigParser(filePath, new IdGenerator(), jobConfig);
-        ImmutablePair<List<Action>, Set<URL>> parse = jobConfigParser.parse();
+        ImmutablePair<
+                        List<Action>,
+                        ImmutablePair<
+                                Set<URL>, Set<ImmutablePair<Class<? extends Factory>, String>>>>
+                parse = jobConfigParser.parse();
         List<Action> actions = parse.getLeft();
         Assertions.assertEquals(1, actions.size());
         Assertions.assertEquals("Sink[0]-LocalFile-default-identifier", actions.get(0).getName());
@@ -67,7 +72,11 @@ public class MultipleTableJobConfigParserTest {
         jobConfig.setJobContext(new JobContext());
         MultipleTableJobConfigParser jobConfigParser =
                 new MultipleTableJobConfigParser(filePath, new IdGenerator(), jobConfig);
-        ImmutablePair<List<Action>, Set<URL>> parse = jobConfigParser.parse();
+        ImmutablePair<
+                        List<Action>,
+                        ImmutablePair<
+                                Set<URL>, Set<ImmutablePair<Class<? extends Factory>, String>>>>
+                parse = jobConfigParser.parse();
         List<Action> actions = parse.getLeft();
         Assertions.assertEquals(1, actions.size());
 

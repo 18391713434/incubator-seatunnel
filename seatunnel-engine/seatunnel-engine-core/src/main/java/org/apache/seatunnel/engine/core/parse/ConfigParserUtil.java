@@ -28,6 +28,7 @@ import org.apache.seatunnel.api.table.factory.FactoryUtil;
 import org.apache.seatunnel.engine.common.exception.JobDefineCheckException;
 
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.tuple.ImmutablePair;
 
 import lombok.extern.slf4j.Slf4j;
 import scala.Tuple2;
@@ -36,6 +37,7 @@ import java.net.URL;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -52,29 +54,62 @@ public final class ConfigParserUtil {
     private ConfigParserUtil() {}
 
     public static <T extends Factory> Set<URL> getFactoryUrls(
-            ReadonlyConfig readonlyConfig,
-            ClassLoader classLoader,
-            Class<T> factoryClass,
-            String factoryId) {
+            ClassLoader classLoader, Class<T> factoryClass, String factoryId) {
         Set<URL> factoryUrls = new HashSet<>();
         URL factoryUrl =
                 FactoryUtil.getFactoryUrl(
                         FactoryUtil.discoverFactory(classLoader, factoryClass, factoryId));
         factoryUrls.add(factoryUrl);
-        getCatalogFactoryUrl(readonlyConfig, classLoader).ifPresent(factoryUrls::add);
         return factoryUrls;
     }
 
-    private static Optional<URL> getCatalogFactoryUrl(
-            ReadonlyConfig readonlyConfig, ClassLoader classLoader) {
+    public static Set<URL> getFactoryUrlsByIdentifierList(
+            Set<ImmutablePair<Class<? extends Factory>, String>> factoryIdentifiers,
+            ClassLoader classLoader) {
+        Set<URL> factoryUrls = new HashSet<>();
+        Iterator<ImmutablePair<Class<? extends Factory>, String>> iterator =
+                factoryIdentifiers.iterator();
+        while (iterator.hasNext()) {
+            ImmutablePair<Class<? extends Factory>, String> factoryIdentifier = iterator.next();
+            Class<? extends Factory> factoryClass = factoryIdentifier.getLeft();
+            String factoryId = factoryIdentifier.getRight();
+            if (factoryClass.getName().equals(CatalogFactory.class.getName())) {
+                Optional<URL> catalogFactoryUrl = getCatalogFactoryUrl(factoryId, classLoader);
+                catalogFactoryUrl.ifPresent(
+                        url -> {
+                            factoryUrls.add(url);
+                        });
+            } else {
+                factoryUrls.addAll(getFactoryUrls(classLoader, factoryClass, factoryId));
+            }
+        }
+        return factoryUrls;
+    }
+
+    public static Optional<URL> getCatalogFactoryUrl(String factoryId, ClassLoader classLoader) {
+        Optional<CatalogFactory> optionalFactory =
+                FactoryUtil.discoverOptionalFactory(classLoader, CatalogFactory.class, factoryId);
+        return optionalFactory.map(FactoryUtil::getFactoryUrl);
+    }
+
+    public static Set<ImmutablePair<Class<? extends Factory>, String>> getFactoryIdentifiers(
+            ReadonlyConfig readonlyConfig,
+            Class<? extends Factory> factoryClass,
+            String factoryId) {
+        Set factoryIdentifiers = new HashSet<ImmutablePair<Class<? extends Factory>, String>>();
+        factoryIdentifiers.add(new ImmutablePair<>(factoryClass, factoryId));
+        factoryIdentifiers.add(getCatalogFactoryIdentifier(readonlyConfig));
+        return factoryIdentifiers;
+    }
+
+    private static ImmutablePair<Class<? extends Factory>, String> getCatalogFactoryIdentifier(
+            ReadonlyConfig readonlyConfig) {
         Map<String, String> catalogOptions =
                 readonlyConfig.getOptional(CatalogOptions.CATALOG_OPTIONS).orElse(new HashMap<>());
         // TODO: fallback key
         String factoryId =
                 catalogOptions.getOrDefault(FACTORY_ID.key(), readonlyConfig.get(PLUGIN_NAME));
-        Optional<CatalogFactory> optionalFactory =
-                FactoryUtil.discoverOptionalFactory(classLoader, CatalogFactory.class, factoryId);
-        return optionalFactory.map(FactoryUtil::getFactoryUrl);
+        return new ImmutablePair<>(CatalogFactory.class, factoryId);
     }
 
     public static void checkGraph(

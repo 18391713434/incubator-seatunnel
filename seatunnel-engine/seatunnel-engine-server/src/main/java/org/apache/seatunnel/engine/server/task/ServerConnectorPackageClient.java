@@ -101,8 +101,15 @@ public class ServerConnectorPackageClient {
         return connectorJars.stream()
                 .map(
                         connectorJar -> {
+                            int lastSlashIndex = connectorJar.getFile().lastIndexOf('/');
+                            String extractedFileName =
+                                    connectorJar
+                                            .getFile()
+                                            .substring(
+                                                    lastSlashIndex
+                                                            + 1); // Extract the file name section
                             String connectorJarStoragePath =
-                                    getConnectorJarFileLocallyFirst(connectorJar.getFile());
+                                    getConnectorJarFileLocallyFirst(extractedFileName);
                             File storageFile = new File(connectorJarStoragePath);
                             try {
                                 return Optional.of(storageFile.toURI().toURL());

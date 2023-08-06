@@ -18,6 +18,7 @@
 package org.apache.seatunnel.engine.server;
 
 import org.apache.seatunnel.api.common.metrics.MetricTags;
+import org.apache.seatunnel.api.table.factory.Factory;
 import org.apache.seatunnel.common.utils.ExceptionUtils;
 import org.apache.seatunnel.common.utils.StringFormatUtils;
 import org.apache.seatunnel.engine.common.Constant;
@@ -47,6 +48,7 @@ import org.apache.seatunnel.engine.server.task.TaskGroupImmutableInformation;
 import org.apache.seatunnel.engine.server.task.operation.NotifyTaskStatusOperation;
 
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.tuple.ImmutablePair;
 
 import com.google.common.collect.Lists;
 import com.hazelcast.instance.impl.NodeState;
@@ -69,6 +71,7 @@ import java.io.IOException;
 import java.net.URL;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -106,6 +109,7 @@ import static org.apache.seatunnel.api.common.metrics.MetricTags.PIPELINE_ID;
 import static org.apache.seatunnel.api.common.metrics.MetricTags.TASK_GROUP_ID;
 import static org.apache.seatunnel.api.common.metrics.MetricTags.TASK_GROUP_LOCATION;
 import static org.apache.seatunnel.api.common.metrics.MetricTags.TASK_ID;
+import static org.apache.seatunnel.engine.core.parse.ConfigParserUtil.getFactoryUrlsByIdentifierList;
 
 /** This class is responsible for the execution of the Task */
 public class TaskExecutionService implements DynamicMetricsProvider {
@@ -260,12 +264,21 @@ public class TaskExecutionService implements DynamicMetricsProvider {
         try {
             Set<URL> jars = taskImmutableInfo.getJars();
             ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
-            if (!CollectionUtils.isEmpty(jars)) {
+            Set<URL> factoryUrls = new HashSet<>();
+            Set<ImmutablePair<Class<? extends Factory>, String>> factoryIdentifiers =
+                    taskImmutableInfo.getFactoryIdentifiers();
+            if (!CollectionUtils.isEmpty(jars)
+                    || (factoryIdentifiers != null && !factoryIdentifiers.isEmpty())) {
+                if (factoryIdentifiers != null && !factoryIdentifiers.isEmpty()) {
+                    factoryUrls.addAll(
+                            getFactoryUrlsByIdentifierList(factoryIdentifiers, classLoader));
+                }
                 // Prioritize obtaining the jar package file required for the current task execution
                 // from the local,
                 // if it does not exist locally, it will be downloaded from the master node.
-                jars = serverConnectorPackageClient.getConnectorJarPath(jars);
-                classLoader = new SeaTunnelChildFirstClassLoader(Lists.newArrayList(jars));
+                Set<URL> urls = serverConnectorPackageClient.getConnectorJarPath(jars);
+                urls.addAll(factoryUrls);
+                classLoader = new SeaTunnelChildFirstClassLoader(Lists.newArrayList(urls));
                 taskGroup =
                         CustomClassLoadedObject.deserializeWithCustomClassLoader(
                                 nodeEngine.getSerializationService(),

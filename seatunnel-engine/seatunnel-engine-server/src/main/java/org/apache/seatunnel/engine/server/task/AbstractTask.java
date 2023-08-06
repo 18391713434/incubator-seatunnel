@@ -18,12 +18,15 @@
 package org.apache.seatunnel.engine.server.task;
 
 import org.apache.seatunnel.api.serialization.Serializer;
+import org.apache.seatunnel.api.table.factory.Factory;
 import org.apache.seatunnel.engine.server.checkpoint.operation.TaskReportStatusOperation;
 import org.apache.seatunnel.engine.server.execution.ProgressState;
 import org.apache.seatunnel.engine.server.execution.Task;
 import org.apache.seatunnel.engine.server.execution.TaskExecutionContext;
 import org.apache.seatunnel.engine.server.execution.TaskLocation;
 import org.apache.seatunnel.engine.server.task.statemachine.SeaTunnelTaskState;
+
+import org.apache.commons.lang3.tuple.ImmutablePair;
 
 import lombok.NonNull;
 
@@ -63,6 +66,8 @@ public abstract class AbstractTask implements Task {
     }
 
     public abstract Set<URL> getJarsUrl();
+
+    public abstract Set<ImmutablePair<Class<? extends Factory>, String>> getFactoryIdentifiers();
 
     @Override
     public void setTaskExecutionContext(TaskExecutionContext taskExecutionContext) {

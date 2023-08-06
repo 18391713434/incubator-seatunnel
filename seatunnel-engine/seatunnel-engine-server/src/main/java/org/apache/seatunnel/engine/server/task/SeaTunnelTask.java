@@ -19,6 +19,7 @@ package org.apache.seatunnel.engine.server.task;
 
 import org.apache.seatunnel.api.common.metrics.MetricTags;
 import org.apache.seatunnel.api.common.metrics.MetricsContext;
+import org.apache.seatunnel.api.table.factory.Factory;
 import org.apache.seatunnel.api.table.type.Record;
 import org.apache.seatunnel.api.table.type.SeaTunnelRow;
 import org.apache.seatunnel.common.utils.function.ConsumerWithException;
@@ -55,6 +56,8 @@ import org.apache.seatunnel.engine.server.task.flow.TransformFlowLifeCycle;
 import org.apache.seatunnel.engine.server.task.group.AbstractTaskGroupWithIntermediateQueue;
 import org.apache.seatunnel.engine.server.task.record.Barrier;
 import org.apache.seatunnel.engine.server.task.statemachine.SeaTunnelTaskState;
+
+import org.apache.commons.lang3.tuple.ImmutablePair;
 
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.internal.metrics.MetricDescriptor;
@@ -286,6 +289,18 @@ public abstract class SeaTunnelTask extends AbstractTask {
     @Override
     public Set<URL> getJarsUrl() {
         return getFlowInfo((action, set) -> set.addAll(action.getJarUrls()));
+    }
+
+    @Override
+    public Set<ImmutablePair<Class<? extends Factory>, String>> getFactoryIdentifiers() {
+        return getFlowInfo(
+                (action, set) -> {
+                    Set<ImmutablePair<Class<? extends Factory>, String>> factoryIdentifiers =
+                            action.getFactoryIdentifiers();
+                    if (factoryIdentifiers != null && !factoryIdentifiers.isEmpty()) {
+                        set.addAll(action.getFactoryIdentifiers());
+                    }
+                });
     }
 
     public Set<ActionStateKey> getActionStateKeys() {

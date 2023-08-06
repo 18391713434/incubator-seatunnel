@@ -20,6 +20,7 @@ package org.apache.seatunnel.engine.server.master;
 import org.apache.seatunnel.api.common.metrics.JobMetrics;
 import org.apache.seatunnel.api.common.metrics.RawJobMetrics;
 import org.apache.seatunnel.api.env.EnvCommonOptions;
+import org.apache.seatunnel.api.table.factory.Factory;
 import org.apache.seatunnel.common.utils.ExceptionUtils;
 import org.apache.seatunnel.common.utils.RetryUtils;
 import org.apache.seatunnel.common.utils.SeaTunnelException;
@@ -59,6 +60,8 @@ import org.apache.seatunnel.engine.server.task.operation.CleanTaskGroupContextOp
 import org.apache.seatunnel.engine.server.task.operation.GetTaskGroupMetricsOperation;
 import org.apache.seatunnel.engine.server.utils.NodeEngineUtil;
 
+import org.apache.commons.lang3.tuple.ImmutablePair;
+
 import com.google.common.collect.Lists;
 import com.hazelcast.cluster.Address;
 import com.hazelcast.core.HazelcastInstanceNotActiveException;
@@ -73,17 +76,20 @@ import com.hazelcast.spi.impl.NodeEngine;
 import lombok.Getter;
 import lombok.NonNull;
 
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.stream.Collectors;
 
 import static com.hazelcast.jet.impl.util.ExceptionUtil.withTryCatch;
+import static org.apache.seatunnel.engine.core.parse.ConfigParserUtil.getFactoryUrlsByIdentifierList;
 
 public class JobMaster {
     private static final ILogger LOGGER = Logger.getLogger(JobMaster.class);
@@ -197,8 +203,15 @@ public class JobMaster {
                         jobImmutableInformation.getJobId(),
                         jobImmutableInformation.getPluginJarsUrls()));
 
-        classLoader =
-                new SeaTunnelChildFirstClassLoader(jobImmutableInformation.getPluginJarsUrls());
+        List<URL> jarsUrl = jobImmutableInformation.getPluginJarsUrls();
+
+        Set<ImmutablePair<Class<? extends Factory>, String>> factoryIdentifiers =
+                jobImmutableInformation.getFactoryIdentifiers();
+        if (factoryIdentifiers != null && !factoryIdentifiers.isEmpty()) {
+            jarsUrl.addAll(getFactoryUrlsByIdentifierList(factoryIdentifiers, classLoader));
+        }
+
+        classLoader = new SeaTunnelChildFirstClassLoader(jarsUrl);
         logicalDag =
                 CustomClassLoadedObject.deserializeWithCustomClassLoader(
                         nodeEngine.getSerializationService(),

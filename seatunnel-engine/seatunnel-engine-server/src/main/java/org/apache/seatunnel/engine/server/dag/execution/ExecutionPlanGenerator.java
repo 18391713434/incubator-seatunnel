@@ -100,6 +100,7 @@ public class ExecutionPlanGenerator {
         if (action instanceof ShuffleAction) {
             newAction =
                     new ShuffleAction(id, action.getName(), ((ShuffleAction) action).getConfig());
+            newAction.setFactoryIdentifiers(action.getFactoryIdentifiers());
         } else if (action instanceof SinkAction) {
             newAction =
                     new SinkAction<>(
@@ -109,6 +110,7 @@ public class ExecutionPlanGenerator {
                             ((SinkAction<?, ?, ?, ?>) action).getSink(),
                             action.getJarUrls(),
                             (SinkConfig) action.getConfig());
+            newAction.setFactoryIdentifiers(action.getFactoryIdentifiers());
         } else if (action instanceof SourceAction) {
             newAction =
                     new SourceAction<>(
@@ -116,6 +118,7 @@ public class ExecutionPlanGenerator {
                             action.getName(),
                             ((SourceAction<?, ?, ?>) action).getSource(),
                             action.getJarUrls());
+            newAction.setFactoryIdentifiers(action.getFactoryIdentifiers());
         } else if (action instanceof TransformAction) {
             newAction =
                     new TransformAction(
@@ -123,6 +126,7 @@ public class ExecutionPlanGenerator {
                             action.getName(),
                             ((TransformAction) action).getTransform(),
                             action.getJarUrls());
+            newAction.setFactoryIdentifiers(action.getFactoryIdentifiers());
         } else if (action instanceof TransformChainAction) {
             newAction =
                     new TransformChainAction(
@@ -130,6 +134,7 @@ public class ExecutionPlanGenerator {
                             action.getName(),
                             action.getJarUrls(),
                             ((TransformChainAction<?>) action).getTransforms());
+            newAction.setFactoryIdentifiers(action.getFactoryIdentifiers());
         } else {
             throw new UnknownActionException(action);
         }

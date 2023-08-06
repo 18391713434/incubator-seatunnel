@@ -17,8 +17,11 @@
 
 package org.apache.seatunnel.engine.core.job;
 
+import org.apache.seatunnel.api.table.factory.Factory;
 import org.apache.seatunnel.engine.common.config.JobConfig;
 import org.apache.seatunnel.engine.core.serializable.JobDataSerializerHook;
+
+import org.apache.commons.lang3.tuple.ImmutablePair;
 
 import com.hazelcast.internal.nio.IOUtil;
 import com.hazelcast.internal.serialization.Data;
@@ -30,6 +33,7 @@ import lombok.NonNull;
 import java.io.IOException;
 import java.net.URL;
 import java.util.List;
+import java.util.Set;
 
 public class JobImmutableInformation implements IdentifiedDataSerializable {
     private long jobId;
@@ -45,6 +49,8 @@ public class JobImmutableInformation implements IdentifiedDataSerializable {
     private JobConfig jobConfig;
 
     private List<URL> pluginJarsUrls;
+
+    private Set<ImmutablePair<Class<? extends Factory>, String>> factoryIdentifiers;
 
     public JobImmutableInformation() {}
 
@@ -101,6 +107,15 @@ public class JobImmutableInformation implements IdentifiedDataSerializable {
         return pluginJarsUrls;
     }
 
+    public Set<ImmutablePair<Class<? extends Factory>, String>> getFactoryIdentifiers() {
+        return factoryIdentifiers;
+    }
+
+    public void setFactoryIdentifiers(
+            Set<ImmutablePair<Class<? extends Factory>, String>> factoryIdentifiers) {
+        this.factoryIdentifiers = factoryIdentifiers;
+    }
+
     @Override
     public int getFactoryId() {
         return JobDataSerializerHook.FACTORY_ID;
@@ -120,6 +135,7 @@ public class JobImmutableInformation implements IdentifiedDataSerializable {
         IOUtil.writeData(out, logicalDag);
         out.writeObject(jobConfig);
         out.writeObject(pluginJarsUrls);
+        out.writeObject(factoryIdentifiers);
     }
 
     @Override
@@ -131,5 +147,6 @@ public class JobImmutableInformation implements IdentifiedDataSerializable {
         logicalDag = IOUtil.readData(in);
         jobConfig = in.readObject();
         pluginJarsUrls = in.readObject();
+        factoryIdentifiers = in.readObject();
     }
 }

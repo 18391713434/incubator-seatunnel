@@ -17,6 +17,7 @@
 
 package org.apache.seatunnel.engine.server.dag.physical;
 
+import org.apache.seatunnel.api.table.factory.Factory;
 import org.apache.seatunnel.common.utils.ExceptionUtils;
 import org.apache.seatunnel.common.utils.RetryUtils;
 import org.apache.seatunnel.engine.common.Constant;
@@ -39,6 +40,7 @@ import org.apache.seatunnel.engine.server.task.operation.DeployTaskOperation;
 import org.apache.seatunnel.engine.server.utils.NodeEngineUtil;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.ImmutablePair;
 
 import com.hazelcast.cluster.Address;
 import com.hazelcast.cluster.Member;
@@ -82,6 +84,8 @@ public class PhysicalVertex {
 
     private final Set<URL> pluginJarsUrls;
 
+    private final Set<ImmutablePair<Class<? extends Factory>, String>> factoryIdentifiers;
+
     private final IMap<Object, Object> runningJobStateIMap;
 
     /**
@@ -113,6 +117,7 @@ public class PhysicalVertex {
             int pipelineId,
             int totalPipelineNum,
             Set<URL> pluginJarsUrls,
+            Set<ImmutablePair<Class<? extends Factory>, String>> factoryIdentifiers,
             @NonNull JobImmutableInformation jobImmutableInformation,
             long initializationTimestamp,
             @NonNull NodeEngine nodeEngine,
@@ -123,6 +128,7 @@ public class PhysicalVertex {
         this.taskGroup = taskGroup;
         this.flakeIdGenerator = flakeIdGenerator;
         this.pluginJarsUrls = pluginJarsUrls;
+        this.factoryIdentifiers = factoryIdentifiers;
 
         Long[] stateTimestamps = new Long[ExecutionState.values().length];
         if (runningJobStateTimestampsIMap.get(taskGroup.getTaskGroupLocation()) == null) {
@@ -338,7 +344,8 @@ public class PhysicalVertex {
         return new TaskGroupImmutableInformation(
                 flakeIdGenerator.newId(),
                 nodeEngine.getSerializationService().toData(this.taskGroup),
-                this.pluginJarsUrls);
+                this.pluginJarsUrls,
+                this.factoryIdentifiers);
     }
 
     private boolean turnToEndState(@NonNull ExecutionState endState) {

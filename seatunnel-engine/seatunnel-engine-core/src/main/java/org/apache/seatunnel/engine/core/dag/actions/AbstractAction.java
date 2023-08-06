@@ -17,6 +17,10 @@
 
 package org.apache.seatunnel.engine.core.dag.actions;
 
+import org.apache.seatunnel.api.table.factory.Factory;
+
+import org.apache.commons.lang3.tuple.ImmutablePair;
+
 import lombok.NonNull;
 
 import java.net.URL;
@@ -33,6 +37,8 @@ public abstract class AbstractAction implements Action {
     private int parallelism = 1;
 
     private final Set<URL> jarUrls;
+
+    private Set<ImmutablePair<Class<? extends Factory>, String>> factoryIdentifiers;
 
     private final Config config;
 
@@ -104,5 +110,16 @@ public abstract class AbstractAction implements Action {
     @Override
     public Config getConfig() {
         return config;
+    }
+
+    @Override
+    public Set<ImmutablePair<Class<? extends Factory>, String>> getFactoryIdentifiers() {
+        return factoryIdentifiers;
+    }
+
+    @Override
+    public void setFactoryIdentifiers(
+            Set<ImmutablePair<Class<? extends Factory>, String>> factoryIdentifiers) {
+        this.factoryIdentifiers = factoryIdentifiers;
     }
 }

@@ -19,6 +19,7 @@ package org.apache.seatunnel.engine.client.job;
 
 import org.apache.seatunnel.api.common.JobContext;
 import org.apache.seatunnel.api.env.EnvCommonOptions;
+import org.apache.seatunnel.api.table.factory.Factory;
 import org.apache.seatunnel.common.config.Common;
 import org.apache.seatunnel.common.utils.FileUtils;
 import org.apache.seatunnel.engine.client.SeaTunnelHazelcastClient;
@@ -66,6 +67,9 @@ public class JobExecutionEnvironment {
     private final Set<URL> jarUrls = new HashSet<>();
 
     private final List<URL> commonPluginJars = new ArrayList<>();
+
+    private final Set<ImmutablePair<Class<? extends Factory>, String>> factoryIdentifierSet =
+            new HashSet<>();
 
     private final String jobFilePath;
 
@@ -159,7 +163,11 @@ public class JobExecutionEnvironment {
     }
 
     private LogicalDag getLogicalDag() {
-        ImmutablePair<List<Action>, Set<URL>> immutablePair = getJobConfigParser().parse();
+        ImmutablePair<
+                        List<Action>,
+                        ImmutablePair<
+                                Set<URL>, Set<ImmutablePair<Class<? extends Factory>, String>>>>
+                immutablePair = getJobConfigParser().parse();
         actions.addAll(immutablePair.getLeft());
 
         try {
@@ -167,7 +175,7 @@ public class JobExecutionEnvironment {
                     connectorPackageClient.uploadCommonPluginJars(
                             Long.parseLong(jobConfig.getJobContext().getJobId()), commonPluginJars);
 
-            Set<URL> pluginJars = immutablePair.getRight();
+            Set<URL> pluginJars = immutablePair.getRight().getLeft();
             Iterator<URL> iterator = pluginJars.iterator();
             while (iterator.hasNext()) {
                 URL pluginJarUrl = iterator.next();
@@ -184,6 +192,8 @@ public class JobExecutionEnvironment {
             pluginJarStoragePathSet.addAll(pluginJarStoragePathSet);
 
             jarUrls.addAll(pluginJarStoragePathSet);
+            factoryIdentifierSet.addAll(immutablePair.getRight().getRight());
+
         } catch (MalformedURLException e) {
             LOGGER.warning(String.format("File URL conversion failed!"));
         }

@@ -21,6 +21,7 @@ import org.apache.seatunnel.shade.com.typesafe.config.Config;
 import org.apache.seatunnel.shade.com.typesafe.config.ConfigFactory;
 
 import org.apache.seatunnel.api.common.JobContext;
+import org.apache.seatunnel.api.table.factory.Factory;
 import org.apache.seatunnel.common.config.Common;
 import org.apache.seatunnel.common.config.DeployMode;
 import org.apache.seatunnel.connectors.seatunnel.console.sink.ConsoleSink;
@@ -108,8 +109,12 @@ public class TestUtils {
         jobConfig.setJobContext(jobContext);
 
         IdGenerator idGenerator = new IdGenerator();
-        ImmutablePair<List<Action>, Set<URL>> immutablePair =
-                new MultipleTableJobConfigParser(filePath, idGenerator, jobConfig).parse();
+        ImmutablePair<
+                        List<Action>,
+                        ImmutablePair<
+                                Set<URL>, Set<ImmutablePair<Class<? extends Factory>, String>>>>
+                immutablePair =
+                        new MultipleTableJobConfigParser(filePath, idGenerator, jobConfig).parse();
 
         LogicalDagGenerator logicalDagGenerator =
                 new LogicalDagGenerator(immutablePair.getLeft(), jobConfig, idGenerator);
