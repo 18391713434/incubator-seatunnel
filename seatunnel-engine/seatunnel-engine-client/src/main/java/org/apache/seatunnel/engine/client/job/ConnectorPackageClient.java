@@ -17,12 +17,11 @@
 
 package org.apache.seatunnel.engine.client.job;
 
-import org.apache.seatunnel.common.constants.CollectionConstants;
 import org.apache.seatunnel.engine.client.SeaTunnelHazelcastClient;
+import org.apache.seatunnel.engine.common.utils.MDUtil;
 import org.apache.seatunnel.engine.core.job.ConnectorJar;
 import org.apache.seatunnel.engine.core.job.ConnectorJarType;
 import org.apache.seatunnel.engine.core.protocol.codec.SeaTunnelUploadConnectorJarCodec;
-import org.apache.seatunnel.plugin.discovery.PluginIdentifier;
 
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.logging.Logger;
@@ -36,6 +35,7 @@ import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.security.MessageDigest;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
@@ -54,8 +54,7 @@ public class ConnectorPackageClient {
         this.hazelcastClient = hazelcastClient;
     }
 
-    public Set<URL> uploadCommonPluginJars(long jobId, List<URL> commonPluginJars)
-            throws MalformedURLException {
+    public Set<URL> uploadCommonPluginJars(long jobId, List<URL> commonPluginJars) {
         Set<URL> pluginJarsStoragePathSet = new HashSet<>();
         // Upload commonPluginJar
         for (URL commonPluginJar : commonPluginJars) {
@@ -63,8 +62,7 @@ public class ConnectorPackageClient {
             // Obtain the directory name of the relative location of the file path.
             int directoryIndex = path.getNameCount() - 3;
             String pluginName = path.getName(directoryIndex).toString();
-            PluginIdentifier pluginIdentifier = PluginIdentifier.of(null, null, pluginName);
-            Optional<URL> optional = uploadCommonPluginJar(jobId, path, pluginIdentifier);
+            Optional<URL> optional = uploadCommonPluginJar(jobId, path, pluginName);
             if (optional.isPresent()) {
                 pluginJarsStoragePathSet.add(optional.get());
             }
@@ -73,17 +71,17 @@ public class ConnectorPackageClient {
     }
 
     private Optional<URL> uploadCommonPluginJar(
-            long jobId, Path commonPluginJar, PluginIdentifier pluginIdentifier) {
-        byte[] data = new byte[0];
-        try {
-            data = readFileData(commonPluginJar);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+            long jobId, Path commonPluginJar, String pluginName) {
+        byte[] data = readFileData(commonPluginJar);
         String fileName = commonPluginJar.getFileName().toString();
+
+        // compute the digest of the file
+        MessageDigest messageDigest = MDUtil.createMessageDigest();
+        byte[] digest = messageDigest.digest(data);
+
         ConnectorJar connectorJar =
                 ConnectorJar.createConnectorJar(
-                        ConnectorJarType.COMMON_PLUGIN_JAR, data, pluginIdentifier, fileName);
+                        digest, ConnectorJarType.COMMON_PLUGIN_JAR, data, pluginName, fileName);
         String connectorJarStoragePath =
                 hazelcastClient.requestOnMasterAndDecodeResponse(
                         SeaTunnelUploadConnectorJarCodec.encodeRequest(
@@ -101,19 +99,17 @@ public class ConnectorPackageClient {
 
     public Optional<URL> uploadConnectorPluginJar(long jobId, URL connectorPluginJarURL) {
         Path connectorPluginJarPath = Paths.get(connectorPluginJarURL.getPath().substring(1));
-        PluginIdentifier pluginIdentifier =
-                PluginIdentifier.of(CollectionConstants.SEATUNNEL_PLUGIN, null, null);
 
-        byte[] data = new byte[0];
-        try {
-            data = readFileData(connectorPluginJarPath);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        byte[] data = readFileData(connectorPluginJarPath);
         String fileName = connectorPluginJarPath.getFileName().toString();
+
+        // compute the digest of the file
+        MessageDigest messageDigest = MDUtil.createMessageDigest();
+        byte[] digest = messageDigest.digest(data);
+
         ConnectorJar connectorJar =
                 ConnectorJar.createConnectorJar(
-                        ConnectorJarType.CONNECTOR_PLUGIN_JAR, data, pluginIdentifier, fileName);
+                        digest, ConnectorJarType.CONNECTOR_PLUGIN_JAR, data, fileName);
         String connectorJarStoragePath =
                 hazelcastClient.requestOnMasterAndDecodeResponse(
                         SeaTunnelUploadConnectorJarCodec.encodeRequest(
@@ -130,7 +126,7 @@ public class ConnectorPackageClient {
         }
     }
 
-    private static byte[] readFileData(Path filePath) throws IOException {
+    private static byte[] readFileData(Path filePath) {
         // Read file data and convert it to a byte array.
         try {
             InputStream inputStream = Files.newInputStream(filePath);
@@ -146,7 +142,7 @@ public class ConnectorPackageClient {
                     String.format(
                             "Failed to read the connector jar package file : { %s } , the file to be read may not exist",
                             filePath.toString()));
-            return new byte[0];
+            throw new RuntimeException();
         }
     }
 }

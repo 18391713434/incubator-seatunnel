@@ -29,17 +29,18 @@ import com.hazelcast.nio.serialization.IdentifiedDataSerializable;
 import com.hazelcast.spi.impl.operationservice.Operation;
 
 import java.io.IOException;
+import java.net.URL;
 
 public class DownloadConnectorJarOperation extends Operation implements IdentifiedDataSerializable {
 
-    private String connectorJarName;
+    private URL connectorJarUrl;
 
     private ImmutablePair<byte[], String> response;
 
     public DownloadConnectorJarOperation() {}
 
-    public DownloadConnectorJarOperation(String connectorJarName) {
-        this.connectorJarName = connectorJarName;
+    public DownloadConnectorJarOperation(URL connectorJarUrl) {
+        this.connectorJarUrl = connectorJarUrl;
     }
 
     @Override
@@ -47,19 +48,19 @@ public class DownloadConnectorJarOperation extends Operation implements Identifi
         SeaTunnelServer seaTunnelServer = getService();
         ConnectorPackageService connectorPackageService =
                 seaTunnelServer.getCoordinatorService().getConnectorPackageService();
-        response = connectorPackageService.readConnectorJarFromLocal(connectorJarName);
+        response = connectorPackageService.readConnectorJarFromLocal(connectorJarUrl);
     }
 
     @Override
     protected void writeInternal(ObjectDataOutput out) throws IOException {
         super.writeInternal(out);
-        out.writeString(connectorJarName);
+        out.writeObject(connectorJarUrl);
     }
 
     @Override
     protected void readInternal(ObjectDataInput in) throws IOException {
         super.readInternal(in);
-        this.connectorJarName = in.readString();
+        this.connectorJarUrl = in.readObject();
     }
 
     @Override

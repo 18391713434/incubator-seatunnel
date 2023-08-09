@@ -21,7 +21,6 @@ import org.apache.seatunnel.shade.com.typesafe.config.Config;
 import org.apache.seatunnel.shade.com.typesafe.config.ConfigFactory;
 
 import org.apache.seatunnel.api.common.JobContext;
-import org.apache.seatunnel.api.table.factory.Factory;
 import org.apache.seatunnel.common.config.Common;
 import org.apache.seatunnel.common.config.DeployMode;
 import org.apache.seatunnel.connectors.seatunnel.console.sink.ConsoleSink;
@@ -35,6 +34,7 @@ import org.apache.seatunnel.engine.core.dag.logical.LogicalDag;
 import org.apache.seatunnel.engine.core.dag.logical.LogicalDagGenerator;
 import org.apache.seatunnel.engine.core.dag.logical.LogicalEdge;
 import org.apache.seatunnel.engine.core.dag.logical.LogicalVertex;
+import org.apache.seatunnel.engine.core.job.PluginFactoryIdentifier;
 import org.apache.seatunnel.engine.core.parse.MultipleTableJobConfigParser;
 
 import org.apache.commons.lang3.tuple.ImmutablePair;
@@ -71,7 +71,8 @@ public class TestUtils {
                         idGenerator.getNextId(),
                         "fake",
                         fakeSource,
-                        Sets.newHashSet(new URL("file:///fake.jar")));
+                        Sets.newHashSet(new URL("file:///fake.jar")),
+                        Collections.emptySet());
         fake.setParallelism(3);
         LogicalVertex fakeVertex = new LogicalVertex(fake.getId(), fake, 3);
 
@@ -82,7 +83,8 @@ public class TestUtils {
                         idGenerator.getNextId(),
                         "console",
                         consoleSink,
-                        Sets.newHashSet(new URL("file:///console.jar")));
+                        Sets.newHashSet(new URL("file:///console.jar")),
+                        Collections.emptySet());
         console.setParallelism(3);
         LogicalVertex consoleVertex = new LogicalVertex(console.getId(), console, 3);
 
@@ -109,10 +111,7 @@ public class TestUtils {
         jobConfig.setJobContext(jobContext);
 
         IdGenerator idGenerator = new IdGenerator();
-        ImmutablePair<
-                        List<Action>,
-                        ImmutablePair<
-                                Set<URL>, Set<ImmutablePair<Class<? extends Factory>, String>>>>
+        ImmutablePair<List<Action>, ImmutablePair<Set<URL>, Set<PluginFactoryIdentifier>>>
                 immutablePair =
                         new MultipleTableJobConfigParser(filePath, idGenerator, jobConfig).parse();
 

@@ -113,7 +113,8 @@ public class CoordinatorServiceTest {
                         "Test",
                         coordinatorServiceTest.getSerializationService().toData(testLogicalDag),
                         testLogicalDag.getJobConfig(),
-                        Collections.emptyList());
+                        Collections.emptyList(),
+                        Collections.emptySet());
 
         Data data =
                 coordinatorServiceTest.getSerializationService().toData(jobImmutableInformation);
@@ -172,7 +173,8 @@ public class CoordinatorServiceTest {
                         "Test",
                         instance1.getSerializationService().toData(testLogicalDag),
                         testLogicalDag.getJobConfig(),
-                        Collections.emptyList());
+                        Collections.emptyList(),
+                        Collections.emptySet());
 
         Data data = instance1.getSerializationService().toData(jobImmutableInformation);
 

@@ -19,7 +19,6 @@ package org.apache.seatunnel.engine.client.job;
 
 import org.apache.seatunnel.api.common.JobContext;
 import org.apache.seatunnel.api.env.EnvCommonOptions;
-import org.apache.seatunnel.api.table.factory.Factory;
 import org.apache.seatunnel.common.config.Common;
 import org.apache.seatunnel.common.utils.FileUtils;
 import org.apache.seatunnel.engine.client.SeaTunnelHazelcastClient;
@@ -31,6 +30,7 @@ import org.apache.seatunnel.engine.core.dag.actions.Config;
 import org.apache.seatunnel.engine.core.dag.logical.LogicalDag;
 import org.apache.seatunnel.engine.core.dag.logical.LogicalDagGenerator;
 import org.apache.seatunnel.engine.core.job.JobImmutableInformation;
+import org.apache.seatunnel.engine.core.job.PluginFactoryIdentifier;
 import org.apache.seatunnel.engine.core.parse.MultipleTableJobConfigParser;
 
 import org.apache.commons.lang3.tuple.ImmutablePair;
@@ -38,7 +38,6 @@ import org.apache.commons.lang3.tuple.ImmutablePair;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.logging.Logger;
 
-import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -47,7 +46,6 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -68,8 +66,7 @@ public class JobExecutionEnvironment {
 
     private final List<URL> commonPluginJars = new ArrayList<>();
 
-    private final Set<ImmutablePair<Class<? extends Factory>, String>> factoryIdentifierSet =
-            new HashSet<>();
+    private final Set<PluginFactoryIdentifier> factoryIdentifierSet = new HashSet<>();
 
     private final String jobFilePath;
 
@@ -157,51 +154,66 @@ public class JobExecutionEnvironment {
                         isStartWithSavePoint,
                         seaTunnelHazelcastClient.getSerializationService().toData(getLogicalDag()),
                         jobConfig,
-                        new ArrayList<>(jarUrls));
+                        new ArrayList<>(jarUrls),
+                        factoryIdentifierSet);
 
         return jobClient.createJobProxy(jobImmutableInformation);
     }
 
     private LogicalDag getLogicalDag() {
-        ImmutablePair<
-                        List<Action>,
-                        ImmutablePair<
-                                Set<URL>, Set<ImmutablePair<Class<? extends Factory>, String>>>>
+        ImmutablePair<List<Action>, ImmutablePair<Set<URL>, Set<PluginFactoryIdentifier>>>
                 immutablePair = getJobConfigParser().parse();
         actions.addAll(immutablePair.getLeft());
 
-        try {
-            Set<URL> pluginJarStoragePathSet =
-                    connectorPackageClient.uploadCommonPluginJars(
-                            Long.parseLong(jobConfig.getJobContext().getJobId()), commonPluginJars);
+        Set<URL> commonJarRemoteUrls =
+                connectorPackageClient.uploadCommonPluginJars(
+                        Long.parseLong(jobConfig.getJobContext().getJobId()), commonPluginJars);
 
-            Set<URL> pluginJars = immutablePair.getRight().getLeft();
-            Iterator<URL> iterator = pluginJars.iterator();
-            while (iterator.hasNext()) {
-                URL pluginJarUrl = iterator.next();
-                if (commonPluginJars.contains(pluginJarUrl)) continue;
-                String file = pluginJarUrl.getFile();
-                if (new File(file).isDirectory()) continue;
-                Optional<URL> storagePath =
-                        connectorPackageClient.uploadConnectorPluginJar(
-                                Long.parseLong(jobConfig.getJobContext().getJobId()), pluginJarUrl);
-                if (storagePath.isPresent()) {
-                    pluginJarStoragePathSet.add(storagePath.get());
-                }
-            }
-            pluginJarStoragePathSet.addAll(pluginJarStoragePathSet);
+        Set<URL> pluginJarRemoteUrls = new HashSet<>();
+        transformActionPluginJarUrls(actions, pluginJarRemoteUrls);
 
-            jarUrls.addAll(pluginJarStoragePathSet);
-            factoryIdentifierSet.addAll(immutablePair.getRight().getRight());
+        jarUrls.addAll(commonJarRemoteUrls);
+        jarUrls.addAll(pluginJarRemoteUrls);
+        factoryIdentifierSet.addAll(immutablePair.getRight().getRight());
 
-        } catch (MalformedURLException e) {
-            LOGGER.warning(String.format("File URL conversion failed!"));
-        }
+        actions.forEach(this::addCommonPluginJarsToAction);
 
         actions.forEach(
                 action -> {
                     Config config = action.getConfig();
                 });
         return getLogicalDagGenerator().generate();
+    }
+
+    void addCommonPluginJarsToAction(Action action) {
+        action.getJarUrls().addAll(commonPluginJars);
+        if (!action.getUpstream().isEmpty()) {
+            action.getUpstream().forEach(this::addCommonPluginJarsToAction);
+        }
+    }
+
+    private void transformActionPluginJarUrls(List<Action> actions, Set<URL> result) {
+        actions.forEach(
+                action -> {
+                    result.addAll(uploadPluginJarUrls(action.getJarUrls()));
+                    if (!action.getUpstream().isEmpty()) {
+                        transformActionPluginJarUrls(action.getUpstream(), result);
+                    }
+                });
+    }
+
+    private Set<URL> uploadPluginJarUrls(Set<URL> pluginJarUrls) {
+        Set<URL> pluginJarRemoteUrls = new HashSet<>();
+        pluginJarUrls.forEach(
+                pluginJarUrl -> {
+                    Optional<URL> storagePath =
+                            connectorPackageClient.uploadConnectorPluginJar(
+                                    Long.parseLong(jobConfig.getJobContext().getJobId()),
+                                    pluginJarUrl);
+                    if (storagePath.isPresent()) {
+                        pluginJarRemoteUrls.add(storagePath.get());
+                    }
+                });
+        return pluginJarRemoteUrls;
     }
 }

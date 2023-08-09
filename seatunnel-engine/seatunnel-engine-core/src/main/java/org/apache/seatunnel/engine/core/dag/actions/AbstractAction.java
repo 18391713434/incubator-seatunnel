@@ -17,9 +17,7 @@
 
 package org.apache.seatunnel.engine.core.dag.actions;
 
-import org.apache.seatunnel.api.table.factory.Factory;
-
-import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.seatunnel.engine.core.job.PluginFactoryIdentifier;
 
 import lombok.NonNull;
 
@@ -38,20 +36,16 @@ public abstract class AbstractAction implements Action {
 
     private final Set<URL> jarUrls;
 
-    private Set<ImmutablePair<Class<? extends Factory>, String>> factoryIdentifiers;
+    private Set<PluginFactoryIdentifier> factoryIdentifiers;
 
     private final Config config;
-
-    protected AbstractAction(long id, @NonNull String name, @NonNull Set<URL> jarUrls) {
-        this(id, name, new ArrayList<>(), jarUrls);
-    }
 
     protected AbstractAction(
             long id,
             @NonNull String name,
-            @NonNull List<Action> upstreams,
-            @NonNull Set<URL> jarUrls) {
-        this(id, name, upstreams, jarUrls, null);
+            @NonNull Set<URL> jarUrls,
+            @NonNull Set<PluginFactoryIdentifier> factoryIdentifiers) {
+        this(id, name, new ArrayList<>(), jarUrls, factoryIdentifiers);
     }
 
     protected AbstractAction(
@@ -59,11 +53,22 @@ public abstract class AbstractAction implements Action {
             @NonNull String name,
             @NonNull List<Action> upstreams,
             @NonNull Set<URL> jarUrls,
+            @NonNull Set<PluginFactoryIdentifier> factoryIdentifiers) {
+        this(id, name, upstreams, jarUrls, factoryIdentifiers, null);
+    }
+
+    protected AbstractAction(
+            long id,
+            @NonNull String name,
+            @NonNull List<Action> upstreams,
+            @NonNull Set<URL> jarUrls,
+            @NonNull Set<PluginFactoryIdentifier> factoryIdentifiers,
             Config config) {
         this.id = id;
         this.name = name;
         this.upstreams = upstreams;
         this.jarUrls = jarUrls;
+        this.factoryIdentifiers = factoryIdentifiers;
         this.config = config;
     }
 
@@ -113,13 +118,11 @@ public abstract class AbstractAction implements Action {
     }
 
     @Override
-    public Set<ImmutablePair<Class<? extends Factory>, String>> getFactoryIdentifiers() {
+    public Set<PluginFactoryIdentifier> getFactoryIdentifiers() {
         return factoryIdentifiers;
     }
 
-    @Override
-    public void setFactoryIdentifiers(
-            Set<ImmutablePair<Class<? extends Factory>, String>> factoryIdentifiers) {
+    public void setFactoryIdentifiers(Set<PluginFactoryIdentifier> factoryIdentifiers) {
         this.factoryIdentifiers = factoryIdentifiers;
     }
 }

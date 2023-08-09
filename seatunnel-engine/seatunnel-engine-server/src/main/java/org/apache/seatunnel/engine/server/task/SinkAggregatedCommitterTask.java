@@ -19,8 +19,8 @@ package org.apache.seatunnel.engine.server.task;
 
 import org.apache.seatunnel.api.serialization.Serializer;
 import org.apache.seatunnel.api.sink.SinkAggregatedCommitter;
-import org.apache.seatunnel.api.table.factory.Factory;
 import org.apache.seatunnel.engine.core.dag.actions.SinkAction;
+import org.apache.seatunnel.engine.core.job.PluginFactoryIdentifier;
 import org.apache.seatunnel.engine.server.checkpoint.ActionStateKey;
 import org.apache.seatunnel.engine.server.checkpoint.ActionSubtaskState;
 import org.apache.seatunnel.engine.server.checkpoint.CheckpointBarrier;
@@ -33,7 +33,6 @@ import org.apache.seatunnel.engine.server.task.record.Barrier;
 import org.apache.seatunnel.engine.server.task.statemachine.SeaTunnelTaskState;
 
 import org.apache.commons.collections4.CollectionUtils;
-import org.apache.commons.lang3.tuple.ImmutablePair;
 
 import com.hazelcast.cluster.Address;
 import lombok.NonNull;
@@ -271,7 +270,7 @@ public class SinkAggregatedCommitterTask<CommandInfoT, AggregatedCommitInfoT>
     }
 
     @Override
-    public Set<ImmutablePair<Class<? extends Factory>, String>> getFactoryIdentifiers() {
+    public Set<PluginFactoryIdentifier> getFactoryIdentifiers() {
         return sink.getFactoryIdentifiers() != null
                 ? sink.getFactoryIdentifiers()
                 : new HashSet<>();

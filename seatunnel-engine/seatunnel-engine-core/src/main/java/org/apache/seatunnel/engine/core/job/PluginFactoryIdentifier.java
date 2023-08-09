@@ -15,37 +15,32 @@
  * limitations under the License.
  */
 
-package org.apache.seatunnel.engine.core.dag.actions;
+package org.apache.seatunnel.engine.core.job;
 
-import org.apache.seatunnel.engine.core.job.PluginFactoryIdentifier;
+import org.apache.seatunnel.api.table.factory.Factory;
 
-import lombok.NonNull;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
 
 import java.io.Serializable;
-import java.net.URL;
-import java.util.List;
-import java.util.Set;
 
-public interface Action extends Serializable {
-    @NonNull String getName();
+@Getter
+@EqualsAndHashCode
+public class PluginFactoryIdentifier implements Serializable {
+    private Class<? extends Factory> pluginFactoryClass;
 
-    void setName(@NonNull String name);
+    private String pluginFactoryId;
 
-    @NonNull List<Action> getUpstream();
+    public PluginFactoryIdentifier() {}
 
-    void addUpstream(@NonNull Action action);
+    public PluginFactoryIdentifier(
+            Class<? extends Factory> pluginFactoryClass, String pluginFactoryId) {
+        this.pluginFactoryClass = pluginFactoryClass;
+        this.pluginFactoryId = pluginFactoryId;
+    }
 
-    int getParallelism();
-
-    void setParallelism(int parallelism);
-
-    long getId();
-
-    Set<URL> getJarUrls();
-
-    Config getConfig();
-
-    Set<PluginFactoryIdentifier> getFactoryIdentifiers();
-
-    void setFactoryIdentifiers(Set<PluginFactoryIdentifier> factoryIdentifiers);
+    public static PluginFactoryIdentifier of(
+            Class<? extends Factory> pluginFactoryClass, String pluginFactoryId) {
+        return new PluginFactoryIdentifier(pluginFactoryClass, pluginFactoryId);
+    }
 }

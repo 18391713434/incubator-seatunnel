@@ -18,6 +18,7 @@
 package org.apache.seatunnel.engine.core.dag.actions;
 
 import org.apache.seatunnel.api.transform.SeaTunnelTransform;
+import org.apache.seatunnel.engine.core.job.PluginFactoryIdentifier;
 
 import lombok.NonNull;
 
@@ -33,8 +34,9 @@ public class TransformAction extends AbstractAction {
             @NonNull String name,
             @NonNull List<Action> upstreams,
             @NonNull SeaTunnelTransform<?> transform,
-            @NonNull Set<URL> jarUrls) {
-        super(id, name, upstreams, jarUrls);
+            @NonNull Set<URL> jarUrls,
+            @NonNull Set<PluginFactoryIdentifier> factoryIdentifiers) {
+        super(id, name, upstreams, jarUrls, factoryIdentifiers);
         this.transform = transform;
     }
 
@@ -42,8 +44,9 @@ public class TransformAction extends AbstractAction {
             long id,
             @NonNull String name,
             @NonNull SeaTunnelTransform<?> transform,
-            @NonNull Set<URL> jarUrls) {
-        super(id, name, jarUrls);
+            @NonNull Set<URL> jarUrls,
+            @NonNull Set<PluginFactoryIdentifier> factoryIdentifiers) {
+        super(id, name, jarUrls, factoryIdentifiers);
         this.transform = transform;
     }
 

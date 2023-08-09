@@ -23,6 +23,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
 import java.nio.file.Path;
+import java.util.List;
 
 public interface ConnectorJarStorageStrategy extends Serializable {
 
@@ -59,9 +60,9 @@ public interface ConnectorJarStorageStrategy extends Serializable {
 
     void deleteConnectorJarInternal(File storageLocation);
 
-    String getStoragePathFromJarName(String connectorJarName);
-
     byte[] readConnectorJarByteDataInternal(File connectorJarFile);
 
     byte[] readConnectorJarByteData(File connectorJarFile);
+
+    void cleanUpWhenJobFinished(long jobId, List<String> connectorJarNameList);
 }

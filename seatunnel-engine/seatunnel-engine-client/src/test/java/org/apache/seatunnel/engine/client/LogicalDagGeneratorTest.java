@@ -18,7 +18,6 @@
 package org.apache.seatunnel.engine.client;
 
 import org.apache.seatunnel.api.common.JobContext;
-import org.apache.seatunnel.api.table.factory.Factory;
 import org.apache.seatunnel.common.config.Common;
 import org.apache.seatunnel.common.config.DeployMode;
 import org.apache.seatunnel.engine.common.config.JobConfig;
@@ -26,6 +25,7 @@ import org.apache.seatunnel.engine.common.utils.IdGenerator;
 import org.apache.seatunnel.engine.core.dag.actions.Action;
 import org.apache.seatunnel.engine.core.dag.logical.LogicalDag;
 import org.apache.seatunnel.engine.core.dag.logical.LogicalDagGenerator;
+import org.apache.seatunnel.engine.core.job.PluginFactoryIdentifier;
 import org.apache.seatunnel.engine.core.parse.MultipleTableJobConfigParser;
 
 import org.apache.commons.lang3.tuple.ImmutablePair;
@@ -49,10 +49,7 @@ public class LogicalDagGeneratorTest {
         jobConfig.setJobContext(new JobContext());
 
         IdGenerator idGenerator = new IdGenerator();
-        ImmutablePair<
-                        List<Action>,
-                        ImmutablePair<
-                                Set<URL>, Set<ImmutablePair<Class<? extends Factory>, String>>>>
+        ImmutablePair<List<Action>, ImmutablePair<Set<URL>, Set<PluginFactoryIdentifier>>>
                 immutablePair =
                         new MultipleTableJobConfigParser(filePath, idGenerator, jobConfig).parse();
 

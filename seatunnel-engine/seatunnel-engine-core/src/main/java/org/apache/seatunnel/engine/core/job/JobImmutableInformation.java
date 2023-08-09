@@ -17,11 +17,8 @@
 
 package org.apache.seatunnel.engine.core.job;
 
-import org.apache.seatunnel.api.table.factory.Factory;
 import org.apache.seatunnel.engine.common.config.JobConfig;
 import org.apache.seatunnel.engine.core.serializable.JobDataSerializerHook;
-
-import org.apache.commons.lang3.tuple.ImmutablePair;
 
 import com.hazelcast.internal.nio.IOUtil;
 import com.hazelcast.internal.serialization.Data;
@@ -50,7 +47,7 @@ public class JobImmutableInformation implements IdentifiedDataSerializable {
 
     private List<URL> pluginJarsUrls;
 
-    private Set<ImmutablePair<Class<? extends Factory>, String>> factoryIdentifiers;
+    private Set<PluginFactoryIdentifier> factoryIdentifiers;
 
     public JobImmutableInformation() {}
 
@@ -60,7 +57,8 @@ public class JobImmutableInformation implements IdentifiedDataSerializable {
             boolean isStartWithSavePoint,
             @NonNull Data logicalDag,
             @NonNull JobConfig jobConfig,
-            @NonNull List<URL> pluginJarsUrls) {
+            @NonNull List<URL> pluginJarsUrls,
+            @NonNull Set<PluginFactoryIdentifier> factoryIdentifiers) {
         this.createTime = System.currentTimeMillis();
         this.jobId = jobId;
         this.jobName = jobName;
@@ -68,6 +66,7 @@ public class JobImmutableInformation implements IdentifiedDataSerializable {
         this.logicalDag = logicalDag;
         this.jobConfig = jobConfig;
         this.pluginJarsUrls = pluginJarsUrls;
+        this.factoryIdentifiers = factoryIdentifiers;
     }
 
     public JobImmutableInformation(
@@ -75,8 +74,9 @@ public class JobImmutableInformation implements IdentifiedDataSerializable {
             String jobName,
             @NonNull Data logicalDag,
             @NonNull JobConfig jobConfig,
-            @NonNull List<URL> pluginJarsUrls) {
-        this(jobId, jobName, false, logicalDag, jobConfig, pluginJarsUrls);
+            @NonNull List<URL> pluginJarsUrls,
+            @NonNull Set<PluginFactoryIdentifier> factoryIdentifiers) {
+        this(jobId, jobName, false, logicalDag, jobConfig, pluginJarsUrls, factoryIdentifiers);
     }
 
     public long getJobId() {
@@ -107,13 +107,8 @@ public class JobImmutableInformation implements IdentifiedDataSerializable {
         return pluginJarsUrls;
     }
 
-    public Set<ImmutablePair<Class<? extends Factory>, String>> getFactoryIdentifiers() {
+    public Set<PluginFactoryIdentifier> getFactoryIdentifiers() {
         return factoryIdentifiers;
-    }
-
-    public void setFactoryIdentifiers(
-            Set<ImmutablePair<Class<? extends Factory>, String>> factoryIdentifiers) {
-        this.factoryIdentifiers = factoryIdentifiers;
     }
 
     @Override

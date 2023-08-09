@@ -19,6 +19,7 @@ package org.apache.seatunnel.engine.server.task;
 
 import com.hazelcast.logging.ILogger;
 
+import java.net.URL;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.TimerTask;
@@ -32,15 +33,15 @@ public class ServerConnectorJarCleanupTask extends TimerTask {
 
     private final ILogger LOGGER;
 
-    private final Consumer<String> cleanupCallback;
+    private final Consumer<URL> cleanupCallback;
 
-    private final ConcurrentHashMap<String, ServerConnectorPackageClient.ExpiryTime>
+    private final ConcurrentHashMap<URL, ServerConnectorPackageClient.ExpiryTime>
             connectorJarExpiryTimes;
 
     public ServerConnectorJarCleanupTask(
             ILogger LOGGER,
-            Consumer<String> cleanupCallback,
-            ConcurrentHashMap<String, ServerConnectorPackageClient.ExpiryTime>
+            Consumer<URL> cleanupCallback,
+            ConcurrentHashMap<URL, ServerConnectorPackageClient.ExpiryTime>
                     connectorJarExpiryTimes) {
         this.LOGGER = LOGGER;
         this.cleanupCallback = cleanupCallback;
@@ -50,16 +51,16 @@ public class ServerConnectorJarCleanupTask extends TimerTask {
     @Override
     public void run() {
         synchronized (connectorJarExpiryTimes) {
-            Iterator<Map.Entry<String, ServerConnectorPackageClient.ExpiryTime>> iterator =
+            Iterator<Map.Entry<URL, ServerConnectorPackageClient.ExpiryTime>> iterator =
                     connectorJarExpiryTimes.entrySet().iterator();
             final long currentTimeMillis = System.currentTimeMillis();
             while (iterator.hasNext()) {
-                Map.Entry<String, ServerConnectorPackageClient.ExpiryTime> entry = iterator.next();
+                Map.Entry<URL, ServerConnectorPackageClient.ExpiryTime> entry = iterator.next();
                 if (entry.getValue().keepUntil > 0
                         && currentTimeMillis >= entry.getValue().keepUntil) {
-                    String connectorJarFileName = entry.getKey();
-                    cleanupCallback.accept(connectorJarFileName);
-                    connectorJarExpiryTimes.remove(connectorJarFileName);
+                    URL connectorJarUrl = entry.getKey();
+                    cleanupCallback.accept(connectorJarUrl);
+                    connectorJarExpiryTimes.remove(connectorJarUrl);
                 }
             }
         }

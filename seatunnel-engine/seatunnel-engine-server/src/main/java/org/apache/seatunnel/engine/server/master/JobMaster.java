@@ -20,7 +20,6 @@ package org.apache.seatunnel.engine.server.master;
 import org.apache.seatunnel.api.common.metrics.JobMetrics;
 import org.apache.seatunnel.api.common.metrics.RawJobMetrics;
 import org.apache.seatunnel.api.env.EnvCommonOptions;
-import org.apache.seatunnel.api.table.factory.Factory;
 import org.apache.seatunnel.common.utils.ExceptionUtils;
 import org.apache.seatunnel.common.utils.RetryUtils;
 import org.apache.seatunnel.common.utils.SeaTunnelException;
@@ -39,6 +38,8 @@ import org.apache.seatunnel.engine.core.job.JobInfo;
 import org.apache.seatunnel.engine.core.job.JobResult;
 import org.apache.seatunnel.engine.core.job.JobStatus;
 import org.apache.seatunnel.engine.core.job.PipelineStatus;
+import org.apache.seatunnel.engine.core.job.PluginFactoryIdentifier;
+import org.apache.seatunnel.engine.server.SeaTunnelServer;
 import org.apache.seatunnel.engine.server.checkpoint.CheckpointManager;
 import org.apache.seatunnel.engine.server.checkpoint.CheckpointPlan;
 import org.apache.seatunnel.engine.server.checkpoint.CompletedCheckpoint;
@@ -59,8 +60,6 @@ import org.apache.seatunnel.engine.server.scheduler.PipelineBaseScheduler;
 import org.apache.seatunnel.engine.server.task.operation.CleanTaskGroupContextOperation;
 import org.apache.seatunnel.engine.server.task.operation.GetTaskGroupMetricsOperation;
 import org.apache.seatunnel.engine.server.utils.NodeEngineUtil;
-
-import org.apache.commons.lang3.tuple.ImmutablePair;
 
 import com.google.common.collect.Lists;
 import com.hazelcast.cluster.Address;
@@ -205,10 +204,12 @@ public class JobMaster {
 
         List<URL> jarsUrl = jobImmutableInformation.getPluginJarsUrls();
 
-        Set<ImmutablePair<Class<? extends Factory>, String>> factoryIdentifiers =
+        Set<PluginFactoryIdentifier> factoryIdentifiers =
                 jobImmutableInformation.getFactoryIdentifiers();
-        if (factoryIdentifiers != null && !factoryIdentifiers.isEmpty()) {
-            jarsUrl.addAll(getFactoryUrlsByIdentifierList(factoryIdentifiers, classLoader));
+        if (!factoryIdentifiers.isEmpty()) {
+            jarsUrl.addAll(
+                    getFactoryUrlsByIdentifierList(
+                            factoryIdentifiers, Thread.currentThread().getContextClassLoader()));
         }
 
         classLoader = new SeaTunnelChildFirstClassLoader(jarsUrl);
@@ -336,6 +337,12 @@ public class JobMaster {
             cancelJob();
         } finally {
             jobMasterCompleteFuture.join();
+            List<URL> jarsUrl = jobImmutableInformation.getPluginJarsUrls();
+            SeaTunnelServer seaTunnelServer = nodeEngine.getService(SeaTunnelServer.SERVICE_NAME);
+            ConnectorPackageService connectorPackageService =
+                    seaTunnelServer.getCoordinatorService().getConnectorPackageService();
+            connectorPackageService.cleanUpWhenJobFinished(
+                    jobImmutableInformation.getJobId(), jarsUrl);
         }
     }
 

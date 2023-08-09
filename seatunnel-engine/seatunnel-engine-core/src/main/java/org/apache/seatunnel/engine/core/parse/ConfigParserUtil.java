@@ -26,9 +26,9 @@ import org.apache.seatunnel.api.table.factory.CatalogFactory;
 import org.apache.seatunnel.api.table.factory.Factory;
 import org.apache.seatunnel.api.table.factory.FactoryUtil;
 import org.apache.seatunnel.engine.common.exception.JobDefineCheckException;
+import org.apache.seatunnel.engine.core.job.PluginFactoryIdentifier;
 
 import org.apache.commons.collections4.CollectionUtils;
-import org.apache.commons.lang3.tuple.ImmutablePair;
 
 import lombok.extern.slf4j.Slf4j;
 import scala.Tuple2;
@@ -64,15 +64,13 @@ public final class ConfigParserUtil {
     }
 
     public static Set<URL> getFactoryUrlsByIdentifierList(
-            Set<ImmutablePair<Class<? extends Factory>, String>> factoryIdentifiers,
-            ClassLoader classLoader) {
+            Set<PluginFactoryIdentifier> factoryIdentifiers, ClassLoader classLoader) {
         Set<URL> factoryUrls = new HashSet<>();
-        Iterator<ImmutablePair<Class<? extends Factory>, String>> iterator =
-                factoryIdentifiers.iterator();
+        Iterator<PluginFactoryIdentifier> iterator = factoryIdentifiers.iterator();
         while (iterator.hasNext()) {
-            ImmutablePair<Class<? extends Factory>, String> factoryIdentifier = iterator.next();
-            Class<? extends Factory> factoryClass = factoryIdentifier.getLeft();
-            String factoryId = factoryIdentifier.getRight();
+            PluginFactoryIdentifier factoryIdentifier = iterator.next();
+            Class<? extends Factory> factoryClass = factoryIdentifier.getPluginFactoryClass();
+            String factoryId = factoryIdentifier.getPluginFactoryId();
             if (factoryClass.getName().equals(CatalogFactory.class.getName())) {
                 Optional<URL> catalogFactoryUrl = getCatalogFactoryUrl(factoryId, classLoader);
                 catalogFactoryUrl.ifPresent(
@@ -92,24 +90,24 @@ public final class ConfigParserUtil {
         return optionalFactory.map(FactoryUtil::getFactoryUrl);
     }
 
-    public static Set<ImmutablePair<Class<? extends Factory>, String>> getFactoryIdentifiers(
+    public static Set<PluginFactoryIdentifier> getFactoryIdentifiers(
             ReadonlyConfig readonlyConfig,
             Class<? extends Factory> factoryClass,
             String factoryId) {
-        Set factoryIdentifiers = new HashSet<ImmutablePair<Class<? extends Factory>, String>>();
-        factoryIdentifiers.add(new ImmutablePair<>(factoryClass, factoryId));
+        Set factoryIdentifiers = new HashSet<PluginFactoryIdentifier>();
+        factoryIdentifiers.add(PluginFactoryIdentifier.of(factoryClass, factoryId));
         factoryIdentifiers.add(getCatalogFactoryIdentifier(readonlyConfig));
         return factoryIdentifiers;
     }
 
-    private static ImmutablePair<Class<? extends Factory>, String> getCatalogFactoryIdentifier(
+    private static PluginFactoryIdentifier getCatalogFactoryIdentifier(
             ReadonlyConfig readonlyConfig) {
         Map<String, String> catalogOptions =
                 readonlyConfig.getOptional(CatalogOptions.CATALOG_OPTIONS).orElse(new HashMap<>());
         // TODO: fallback key
         String factoryId =
                 catalogOptions.getOrDefault(FACTORY_ID.key(), readonlyConfig.get(PLUGIN_NAME));
-        return new ImmutablePair<>(CatalogFactory.class, factoryId);
+        return PluginFactoryIdentifier.of(CatalogFactory.class, factoryId);
     }
 
     public static void checkGraph(

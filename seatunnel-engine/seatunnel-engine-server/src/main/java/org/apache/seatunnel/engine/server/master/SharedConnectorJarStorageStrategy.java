@@ -19,6 +19,7 @@ package org.apache.seatunnel.engine.server.master;
 
 import org.apache.seatunnel.engine.common.Constant;
 import org.apache.seatunnel.engine.common.config.server.ConnectorJarStorageConfig;
+import org.apache.seatunnel.engine.core.job.CommonPluginJar;
 import org.apache.seatunnel.engine.core.job.ConnectorJar;
 import org.apache.seatunnel.engine.core.job.ConnectorJarType;
 import org.apache.seatunnel.engine.core.job.RefCount;
@@ -28,6 +29,7 @@ import com.hazelcast.spi.impl.NodeEngineImpl;
 
 import java.io.File;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Timer;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -101,14 +103,23 @@ public class SharedConnectorJarStorageStrategy extends AbstractConnectorJarStora
     }
 
     @Override
+    public void cleanUpWhenJobFinished(long jobId, List<String> connectorJarNameList) {
+        connectorJarNameList.forEach(
+                connectorJarName -> {
+                    decreaseConnectorJarRefCount(connectorJarName);
+                });
+    }
+
+    @Override
     public String getStorageLocationPath(long jobId, ConnectorJar connectorJar) {
         checkNotNull(jobId);
         if (connectorJar.getType() == ConnectorJarType.COMMON_PLUGIN_JAR) {
+            CommonPluginJar commonPluginJar = (CommonPluginJar) connectorJar;
             return String.format(
                     "%s/%s/%s/%s/%s",
                     storageDir,
                     COMMON_PLUGIN_JAR_STORAGE_PATH,
-                    connectorJar.getPluginName(),
+                    commonPluginJar.getPluginName(),
                     "lib",
                     connectorJar.getFileName());
         } else {
@@ -131,21 +142,6 @@ public class SharedConnectorJarStorageStrategy extends AbstractConnectorJarStora
                         return refCount;
                     }
                 });
-    }
-
-    @Override
-    public String getStoragePathFromJarName(String connectorJarName) {
-        RefCount refCount = connectorJarRefCounters.get(connectorJarName);
-        if (refCount == null) {
-            LOGGER.warning(
-                    String.format(
-                            "Failed to obtain the storage path of the jar package"
-                                    + " on the master node through the jar package name : { %s },"
-                                    + " because the current jar package file does not exist on the master node.",
-                            connectorJarName));
-            return "";
-        }
-        return refCount.getStoragePath();
     }
 
     @Override

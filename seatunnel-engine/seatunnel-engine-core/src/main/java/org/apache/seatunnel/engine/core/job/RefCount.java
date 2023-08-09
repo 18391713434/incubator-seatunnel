@@ -17,17 +17,12 @@
 
 package org.apache.seatunnel.engine.core.job;
 
-import org.apache.seatunnel.engine.core.serializable.JobDataSerializerHook;
-
-import com.hazelcast.nio.ObjectDataInput;
-import com.hazelcast.nio.ObjectDataOutput;
-import com.hazelcast.nio.serialization.IdentifiedDataSerializable;
 import lombok.Data;
 
-import java.io.IOException;
+import java.io.Serializable;
 
 @Data
-public class RefCount implements IdentifiedDataSerializable {
+public class RefCount implements Serializable {
 
     /** Number of references to a connector jar. */
     private Long references = 0L;
@@ -35,26 +30,4 @@ public class RefCount implements IdentifiedDataSerializable {
     private String storagePath;
 
     public RefCount() {}
-
-    @Override
-    public int getFactoryId() {
-        return JobDataSerializerHook.FACTORY_ID;
-    }
-
-    @Override
-    public int getClassId() {
-        return JobDataSerializerHook.CONNECTOR_JAR_REF_COUNT;
-    }
-
-    @Override
-    public void writeData(ObjectDataOutput out) throws IOException {
-        out.writeLong(references);
-        out.writeString(storagePath);
-    }
-
-    @Override
-    public void readData(ObjectDataInput in) throws IOException {
-        this.references = in.readLong();
-        this.storagePath = in.readString();
-    }
 }

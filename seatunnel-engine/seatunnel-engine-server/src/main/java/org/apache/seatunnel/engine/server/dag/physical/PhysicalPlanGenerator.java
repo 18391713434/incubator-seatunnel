@@ -18,7 +18,6 @@
 package org.apache.seatunnel.engine.server.dag.physical;
 
 import org.apache.seatunnel.api.sink.SinkAggregatedCommitter;
-import org.apache.seatunnel.api.table.factory.Factory;
 import org.apache.seatunnel.api.table.type.MultipleRowType;
 import org.apache.seatunnel.engine.common.config.server.QueueType;
 import org.apache.seatunnel.engine.common.utils.IdGenerator;
@@ -33,6 +32,7 @@ import org.apache.seatunnel.engine.core.dag.actions.SourceAction;
 import org.apache.seatunnel.engine.core.dag.internal.IntermediateQueue;
 import org.apache.seatunnel.engine.core.job.JobImmutableInformation;
 import org.apache.seatunnel.engine.core.job.PipelineStatus;
+import org.apache.seatunnel.engine.core.job.PluginFactoryIdentifier;
 import org.apache.seatunnel.engine.server.checkpoint.ActionStateKey;
 import org.apache.seatunnel.engine.server.checkpoint.CheckpointPlan;
 import org.apache.seatunnel.engine.server.dag.execution.ExecutionEdge;
@@ -57,8 +57,6 @@ import org.apache.seatunnel.engine.server.task.SourceSplitEnumeratorTask;
 import org.apache.seatunnel.engine.server.task.TransformSeaTunnelTask;
 import org.apache.seatunnel.engine.server.task.group.TaskGroupWithIntermediateBlockingQueue;
 import org.apache.seatunnel.engine.server.task.group.TaskGroupWithIntermediateDisruptor;
-
-import org.apache.commons.lang3.tuple.ImmutablePair;
 
 import com.google.common.collect.Lists;
 import com.hazelcast.flakeidgen.FlakeIdGenerator;
@@ -576,14 +574,13 @@ public class PhysicalPlanGenerator {
                                                 .flatMap(task -> task.getJarsUrl().stream())
                                                 .collect(Collectors.toSet());
 
-                                Set<ImmutablePair<Class<? extends Factory>, String>>
-                                        factoryIdentifiers =
-                                                taskList.stream()
-                                                        .flatMap(
-                                                                task ->
-                                                                        task.getFactoryIdentifiers()
-                                                                                .stream())
-                                                        .collect(Collectors.toSet());
+                                Set<PluginFactoryIdentifier> factoryIdentifiers =
+                                        taskList.stream()
+                                                .flatMap(
+                                                        task ->
+                                                                task.getFactoryIdentifiers()
+                                                                        .stream())
+                                                .collect(Collectors.toSet());
 
                                 if (taskList.stream()
                                         .anyMatch(TransformSeaTunnelTask.class::isInstance)) {

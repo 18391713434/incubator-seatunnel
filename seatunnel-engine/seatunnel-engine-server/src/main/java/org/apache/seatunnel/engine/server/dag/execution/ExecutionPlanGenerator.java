@@ -38,6 +38,7 @@ import org.apache.seatunnel.engine.core.dag.logical.LogicalDag;
 import org.apache.seatunnel.engine.core.dag.logical.LogicalEdge;
 import org.apache.seatunnel.engine.core.dag.logical.LogicalVertex;
 import org.apache.seatunnel.engine.core.job.JobImmutableInformation;
+import org.apache.seatunnel.engine.core.job.PluginFactoryIdentifier;
 
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
@@ -100,7 +101,6 @@ public class ExecutionPlanGenerator {
         if (action instanceof ShuffleAction) {
             newAction =
                     new ShuffleAction(id, action.getName(), ((ShuffleAction) action).getConfig());
-            newAction.setFactoryIdentifiers(action.getFactoryIdentifiers());
         } else if (action instanceof SinkAction) {
             newAction =
                     new SinkAction<>(
@@ -109,32 +109,32 @@ public class ExecutionPlanGenerator {
                             new ArrayList<>(),
                             ((SinkAction<?, ?, ?, ?>) action).getSink(),
                             action.getJarUrls(),
+                            action.getFactoryIdentifiers(),
                             (SinkConfig) action.getConfig());
-            newAction.setFactoryIdentifiers(action.getFactoryIdentifiers());
         } else if (action instanceof SourceAction) {
             newAction =
                     new SourceAction<>(
                             id,
                             action.getName(),
                             ((SourceAction<?, ?, ?>) action).getSource(),
-                            action.getJarUrls());
-            newAction.setFactoryIdentifiers(action.getFactoryIdentifiers());
+                            action.getJarUrls(),
+                            action.getFactoryIdentifiers());
         } else if (action instanceof TransformAction) {
             newAction =
                     new TransformAction(
                             id,
                             action.getName(),
                             ((TransformAction) action).getTransform(),
-                            action.getJarUrls());
-            newAction.setFactoryIdentifiers(action.getFactoryIdentifiers());
+                            action.getJarUrls(),
+                            action.getFactoryIdentifiers());
         } else if (action instanceof TransformChainAction) {
             newAction =
                     new TransformChainAction(
                             id,
                             action.getName(),
                             action.getJarUrls(),
+                            action.getFactoryIdentifiers(),
                             ((TransformChainAction<?>) action).getTransforms());
-            newAction.setFactoryIdentifiers(action.getFactoryIdentifiers());
         } else {
             throw new UnknownActionException(action);
         }
@@ -353,6 +353,7 @@ public class ExecutionPlanGenerator {
             List<SeaTunnelTransform> transforms = new ArrayList<>(transformChainedVertices.size());
             List<String> names = new ArrayList<>(transformChainedVertices.size());
             Set<URL> jars = new HashSet<>();
+            Set<PluginFactoryIdentifier> factoryIdentifiers = new HashSet<>();
 
             transformChainedVertices.stream()
                     .peek(
@@ -365,13 +366,18 @@ public class ExecutionPlanGenerator {
                             action -> {
                                 transforms.add(action.getTransform());
                                 jars.addAll(action.getJarUrls());
+                                factoryIdentifiers.addAll(action.getFactoryIdentifiers());
                                 names.add(action.getName());
                             });
             String transformChainActionName =
                     String.format("TransformChain[%s]", String.join("->", names));
             TransformChainAction transformChainAction =
                     new TransformChainAction(
-                            newVertexId, transformChainActionName, jars, transforms);
+                            newVertexId,
+                            transformChainActionName,
+                            jars,
+                            factoryIdentifiers,
+                            transforms);
             transformChainAction.setParallelism(currentVertex.getAction().getParallelism());
 
             ExecutionVertex executionVertex =

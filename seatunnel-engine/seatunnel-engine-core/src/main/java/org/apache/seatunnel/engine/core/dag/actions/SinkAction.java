@@ -18,6 +18,7 @@
 package org.apache.seatunnel.engine.core.dag.actions;
 
 import org.apache.seatunnel.api.sink.SeaTunnelSink;
+import org.apache.seatunnel.engine.core.job.PluginFactoryIdentifier;
 
 import lombok.NonNull;
 
@@ -34,17 +35,9 @@ public class SinkAction<IN, StateT, CommitInfoT, AggregatedCommitInfoT> extends 
             long id,
             @NonNull String name,
             @NonNull SeaTunnelSink<IN, StateT, CommitInfoT, AggregatedCommitInfoT> sink,
-            @NonNull Set<URL> jarUrls) {
-        this(id, name, new ArrayList<>(), sink, jarUrls);
-    }
-
-    public SinkAction(
-            long id,
-            @NonNull String name,
-            @NonNull List<Action> upstreams,
-            @NonNull SeaTunnelSink<IN, StateT, CommitInfoT, AggregatedCommitInfoT> sink,
-            @NonNull Set<URL> jarUrls) {
-        this(id, name, upstreams, sink, jarUrls, null);
+            @NonNull Set<URL> jarUrls,
+            @NonNull Set<PluginFactoryIdentifier> factoryIdentifiers) {
+        this(id, name, new ArrayList<>(), sink, jarUrls, factoryIdentifiers);
     }
 
     public SinkAction(
@@ -53,8 +46,19 @@ public class SinkAction<IN, StateT, CommitInfoT, AggregatedCommitInfoT> extends 
             @NonNull List<Action> upstreams,
             @NonNull SeaTunnelSink<IN, StateT, CommitInfoT, AggregatedCommitInfoT> sink,
             @NonNull Set<URL> jarUrls,
+            @NonNull Set<PluginFactoryIdentifier> factoryIdentifiers) {
+        this(id, name, upstreams, sink, jarUrls, factoryIdentifiers, null);
+    }
+
+    public SinkAction(
+            long id,
+            @NonNull String name,
+            @NonNull List<Action> upstreams,
+            @NonNull SeaTunnelSink<IN, StateT, CommitInfoT, AggregatedCommitInfoT> sink,
+            @NonNull Set<URL> jarUrls,
+            @NonNull Set<PluginFactoryIdentifier> factoryIdentifiers,
             SinkConfig config) {
-        super(id, name, upstreams, jarUrls, config);
+        super(id, name, upstreams, jarUrls, factoryIdentifiers, config);
         this.sink = sink;
     }
 

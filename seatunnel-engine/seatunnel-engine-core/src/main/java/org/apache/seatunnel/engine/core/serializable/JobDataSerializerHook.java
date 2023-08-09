@@ -25,7 +25,6 @@ import org.apache.seatunnel.engine.core.job.CommonPluginJar;
 import org.apache.seatunnel.engine.core.job.ConnectorPluginJar;
 import org.apache.seatunnel.engine.core.job.JobImmutableInformation;
 import org.apache.seatunnel.engine.core.job.JobInfo;
-import org.apache.seatunnel.engine.core.job.RefCount;
 
 import com.hazelcast.internal.serialization.DataSerializerHook;
 import com.hazelcast.internal.serialization.impl.FactoryIdHelper;
@@ -61,8 +60,6 @@ public final class JobDataSerializerHook implements DataSerializerHook {
 
     public static final int CONNECTOR_PLUGIN_JAR = 6;
 
-    public static final int CONNECTOR_JAR_REF_COUNT = 7;
-
     public static final int FACTORY_ID =
             FactoryIdHelper.getFactoryId(
                     SeaTunnelFactoryIdConstant.SEATUNNEL_JOB_DATA_SERIALIZER_FACTORY,
@@ -97,8 +94,6 @@ public final class JobDataSerializerHook implements DataSerializerHook {
                     return new CommonPluginJar();
                 case CONNECTOR_PLUGIN_JAR:
                     return new ConnectorPluginJar();
-                case CONNECTOR_JAR_REF_COUNT:
-                    return new RefCount();
                 default:
                     throw new IllegalArgumentException("Unknown type id " + typeId);
             }

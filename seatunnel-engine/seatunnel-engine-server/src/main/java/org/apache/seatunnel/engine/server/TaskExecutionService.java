@@ -18,7 +18,6 @@
 package org.apache.seatunnel.engine.server;
 
 import org.apache.seatunnel.api.common.metrics.MetricTags;
-import org.apache.seatunnel.api.table.factory.Factory;
 import org.apache.seatunnel.common.utils.ExceptionUtils;
 import org.apache.seatunnel.common.utils.StringFormatUtils;
 import org.apache.seatunnel.engine.common.Constant;
@@ -28,6 +27,7 @@ import org.apache.seatunnel.engine.common.config.server.ThreadShareMode;
 import org.apache.seatunnel.engine.common.exception.JobNotFoundException;
 import org.apache.seatunnel.engine.common.loader.SeaTunnelChildFirstClassLoader;
 import org.apache.seatunnel.engine.common.utils.PassiveCompletableFuture;
+import org.apache.seatunnel.engine.core.job.PluginFactoryIdentifier;
 import org.apache.seatunnel.engine.server.exception.TaskGroupContextNotFoundException;
 import org.apache.seatunnel.engine.server.execution.ExecutionState;
 import org.apache.seatunnel.engine.server.execution.ProgressState;
@@ -48,7 +48,6 @@ import org.apache.seatunnel.engine.server.task.TaskGroupImmutableInformation;
 import org.apache.seatunnel.engine.server.task.operation.NotifyTaskStatusOperation;
 
 import org.apache.commons.collections4.CollectionUtils;
-import org.apache.commons.lang3.tuple.ImmutablePair;
 
 import com.google.common.collect.Lists;
 import com.hazelcast.instance.impl.NodeState;
@@ -265,11 +264,10 @@ public class TaskExecutionService implements DynamicMetricsProvider {
             Set<URL> jars = taskImmutableInfo.getJars();
             ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
             Set<URL> factoryUrls = new HashSet<>();
-            Set<ImmutablePair<Class<? extends Factory>, String>> factoryIdentifiers =
+            Set<PluginFactoryIdentifier> factoryIdentifiers =
                     taskImmutableInfo.getFactoryIdentifiers();
-            if (!CollectionUtils.isEmpty(jars)
-                    || (factoryIdentifiers != null && !factoryIdentifiers.isEmpty())) {
-                if (factoryIdentifiers != null && !factoryIdentifiers.isEmpty()) {
+            if (!CollectionUtils.isEmpty(jars) || !factoryIdentifiers.isEmpty()) {
+                if (!factoryIdentifiers.isEmpty()) {
                     factoryUrls.addAll(
                             getFactoryUrlsByIdentifierList(factoryIdentifiers, classLoader));
                 }

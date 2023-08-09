@@ -17,10 +17,8 @@
 
 package org.apache.seatunnel.engine.server.task;
 
-import org.apache.seatunnel.api.table.factory.Factory;
+import org.apache.seatunnel.engine.core.job.PluginFactoryIdentifier;
 import org.apache.seatunnel.engine.server.serializable.TaskDataSerializerHook;
-
-import org.apache.commons.lang3.tuple.ImmutablePair;
 
 import com.hazelcast.internal.nio.IOUtil;
 import com.hazelcast.internal.serialization.Data;
@@ -43,7 +41,7 @@ public class TaskGroupImmutableInformation implements IdentifiedDataSerializable
 
     private Set<URL> jars;
 
-    private Set<ImmutablePair<Class<? extends Factory>, String>> factoryIdentifiers;
+    private Set<PluginFactoryIdentifier> factoryIdentifiers;
 
     public TaskGroupImmutableInformation() {}
 

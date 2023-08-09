@@ -17,13 +17,13 @@
 
 package org.apache.seatunnel.engine.server.dag.physical;
 
-import org.apache.seatunnel.api.table.factory.Factory;
 import org.apache.seatunnel.common.utils.ExceptionUtils;
 import org.apache.seatunnel.common.utils.RetryUtils;
 import org.apache.seatunnel.engine.common.Constant;
 import org.apache.seatunnel.engine.common.utils.ExceptionUtil;
 import org.apache.seatunnel.engine.common.utils.PassiveCompletableFuture;
 import org.apache.seatunnel.engine.core.job.JobImmutableInformation;
+import org.apache.seatunnel.engine.core.job.PluginFactoryIdentifier;
 import org.apache.seatunnel.engine.server.SeaTunnelServer;
 import org.apache.seatunnel.engine.server.dag.execution.ExecutionVertex;
 import org.apache.seatunnel.engine.server.execution.ExecutionState;
@@ -40,7 +40,6 @@ import org.apache.seatunnel.engine.server.task.operation.DeployTaskOperation;
 import org.apache.seatunnel.engine.server.utils.NodeEngineUtil;
 
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.tuple.ImmutablePair;
 
 import com.hazelcast.cluster.Address;
 import com.hazelcast.cluster.Member;
@@ -84,7 +83,7 @@ public class PhysicalVertex {
 
     private final Set<URL> pluginJarsUrls;
 
-    private final Set<ImmutablePair<Class<? extends Factory>, String>> factoryIdentifiers;
+    private final Set<PluginFactoryIdentifier> factoryIdentifiers;
 
     private final IMap<Object, Object> runningJobStateIMap;
 
@@ -117,7 +116,7 @@ public class PhysicalVertex {
             int pipelineId,
             int totalPipelineNum,
             Set<URL> pluginJarsUrls,
-            Set<ImmutablePair<Class<? extends Factory>, String>> factoryIdentifiers,
+            Set<PluginFactoryIdentifier> factoryIdentifiers,
             @NonNull JobImmutableInformation jobImmutableInformation,
             long initializationTimestamp,
             @NonNull NodeEngine nodeEngine,

@@ -31,6 +31,9 @@ import com.hazelcast.spi.impl.NodeEngineImpl;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.File;
+import java.net.URL;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Slf4j
 public class ConnectorPackageService {
@@ -68,20 +71,30 @@ public class ConnectorPackageService {
         return storageFilePath;
     }
 
-    public ImmutablePair<byte[], String> readConnectorJarFromLocal(String connectorJarName) {
-        String storagePath =
-                connectorJarStorageStrategy.getStoragePathFromJarName(connectorJarName);
-        byte[] bytes = connectorJarStorageStrategy.readConnectorJarByteData(new File(storagePath));
-        return new ImmutablePair<>(bytes, storagePath);
+    public ImmutablePair<byte[], String> readConnectorJarFromLocal(URL connectorJarUrl) {
+        byte[] bytes =
+                connectorJarStorageStrategy.readConnectorJarByteData(
+                        new File(connectorJarUrl.getPath()));
+        return new ImmutablePair<>(bytes, connectorJarUrl.getPath());
     }
 
-    //    public ConnectorJar getFileFromLocalOrHAStorage() {}
+    public void cleanUpWhenJobFinished(long jobId, List<URL> jarsUrls) {
+        List<String> connectorJarNameList =
+                jarsUrls.stream()
+                        .map(
+                                jarsUrl -> {
+                                    return getJarNameFromUrl(jarsUrl);
+                                })
+                        .collect(Collectors.toList());
+        connectorJarStorageStrategy.cleanUpWhenJobFinished(jobId, connectorJarNameList);
+    }
 
-    //    public URL getFileFromLocalStorage() {
-    ////        return
-    ////    }
-
-    //    public ConnectorJar getFileFromHAStorage() {
-    ////
-    ////
+    private String getJarNameFromUrl(URL connectorJarUrl) {
+        int lastSlashIndex = connectorJarUrl.getFile().lastIndexOf('/');
+        String extractedFileName =
+                connectorJarUrl
+                        .getFile()
+                        .substring(lastSlashIndex + 1); // Extract the file name section
+        return extractedFileName;
+    }
 }

@@ -55,6 +55,7 @@ import org.apache.seatunnel.engine.core.dag.actions.SinkAction;
 import org.apache.seatunnel.engine.core.dag.actions.SinkConfig;
 import org.apache.seatunnel.engine.core.dag.actions.SourceAction;
 import org.apache.seatunnel.engine.core.dag.actions.TransformAction;
+import org.apache.seatunnel.engine.core.job.PluginFactoryIdentifier;
 import org.apache.seatunnel.plugin.discovery.PluginIdentifier;
 import org.apache.seatunnel.plugin.discovery.seatunnel.SeaTunnelSinkPluginDiscovery;
 
@@ -108,7 +109,7 @@ public class MultipleTableJobConfigParser {
 
     private final JobConfigParser fallbackParser;
 
-    private final Set<ImmutablePair<Class<? extends Factory>, String>> factoryIdentifierSet;
+    private final Set<PluginFactoryIdentifier> factoryIdentifierSet;
 
     public MultipleTableJobConfigParser(
             String jobDefineFilePath, IdGenerator idGenerator, JobConfig jobConfig) {
@@ -129,9 +130,7 @@ public class MultipleTableJobConfigParser {
         this.factoryIdentifierSet = new HashSet<>();
     }
 
-    public ImmutablePair<
-                    List<Action>,
-                    ImmutablePair<Set<URL>, Set<ImmutablePair<Class<? extends Factory>, String>>>>
+    public ImmutablePair<List<Action>, ImmutablePair<Set<URL>, Set<PluginFactoryIdentifier>>>
             parse() {
         List<? extends Config> sourceConfigs =
                 TypesafeConfigUtils.getConfigList(
@@ -176,8 +175,6 @@ public class MultipleTableJobConfigParser {
             sinkActions.addAll(parseSink(configIndex, sinkConfig, classLoader, tableWithActionMap));
         }
         Set<URL> factoryUrls = getUsedFactoryUrls(sinkActions);
-        factoryUrls.addAll(commonPluginJars);
-        sinkActions.forEach(this::addCommonPluginJarsToAction);
         return new ImmutablePair<>(
                 sinkActions, new ImmutablePair<>(factoryUrls, factoryIdentifierSet));
     }
@@ -317,7 +314,7 @@ public class MultipleTableJobConfigParser {
                                 catalogTables, readonlyConfig, classLoader, factoryId);
 
         Set<URL> factoryUrls = new HashSet<>();
-        Set<ImmutablePair<Class<? extends Factory>, String>> factoryIdentifiers =
+        Set<PluginFactoryIdentifier> factoryIdentifiers =
                 getFactoryIdentifiers(readonlyConfig, TableSourceFactory.class, factoryId);
         factoryIdentifierSet.addAll(factoryIdentifiers);
 
@@ -332,9 +329,9 @@ public class MultipleTableJobConfigParser {
             source.setJobContext(jobConfig.getJobContext());
             ensureJobModeMatch(jobConfig.getJobContext(), source);
             SourceAction<Object, SourceSplit, Serializable> action =
-                    new SourceAction<>(id, actionName, tuple2._1(), factoryUrls);
+                    new SourceAction<>(
+                            id, actionName, tuple2._1(), factoryUrls, factoryIdentifiers);
             action.setParallelism(parallelism);
-            action.setFactoryIdentifiers(factoryIdentifiers);
             for (CatalogTable catalogTable : tuple2._2()) {
                 actions.add(new Tuple2<>(catalogTable, action));
             }
@@ -374,7 +371,7 @@ public class MultipleTableJobConfigParser {
         final String factoryId = getFactoryId(readonlyConfig);
         // get jar urls
         Set<URL> jarUrls = new HashSet<>();
-        Set<ImmutablePair<Class<? extends Factory>, String>> factoryIdentifiers =
+        Set<PluginFactoryIdentifier> factoryIdentifiers =
                 getFactoryIdentifiers(readonlyConfig, TableTransformFactory.class, factoryId);
         factoryIdentifierSet.addAll(factoryIdentifiers);
         final List<String> inputIds = getInputIds(readonlyConfig);
@@ -447,9 +444,13 @@ public class MultipleTableJobConfigParser {
 
         TransformAction transformAction =
                 new TransformAction(
-                        id, actionName, new ArrayList<>(inputActions), transform, jarUrls);
+                        id,
+                        actionName,
+                        new ArrayList<>(inputActions),
+                        transform,
+                        jarUrls,
+                        factoryIdentifiers);
         transformAction.setParallelism(parallelism);
-        transformAction.setFactoryIdentifiers(factoryIdentifiers);
         tableWithActionMap.put(
                 tableId,
                 Collections.singletonList(
@@ -536,7 +537,7 @@ public class MultipleTableJobConfigParser {
 
         // get jar urls
         Set<URL> jarUrls = new HashSet<>();
-        Set<ImmutablePair<Class<? extends Factory>, String>> factoryIdentifiers =
+        Set<PluginFactoryIdentifier> factoryIdentifiers =
                 getFactoryIdentifiers(readonlyConfig, TableSinkFactory.class, factoryId);
         factoryIdentifierSet.addAll(factoryIdentifiers);
         List<SinkAction<?, ?, ?, ?>> sinkActions = new ArrayList<>();
@@ -558,10 +559,10 @@ public class MultipleTableJobConfigParser {
                             readonlyConfig,
                             classLoader,
                             jarUrls,
+                            factoryIdentifiers,
                             factoryId,
                             inputActionSample._2().getParallelism(),
                             configIndex);
-            sinkAction.setFactoryIdentifiers(factoryIdentifiers);
             sinkActions.add(sinkAction);
             return sinkActions;
         }
@@ -576,10 +577,10 @@ public class MultipleTableJobConfigParser {
                             readonlyConfig,
                             classLoader,
                             jarUrls,
+                            factoryIdentifiers,
                             factoryId,
                             tuple._2().getParallelism(),
                             configIndex);
-            sinkAction.setFactoryIdentifiers(factoryIdentifiers);
             sinkActions.add(sinkAction);
         }
         return sinkActions;
@@ -592,6 +593,7 @@ public class MultipleTableJobConfigParser {
             ReadonlyConfig readonlyConfig,
             ClassLoader classLoader,
             Set<URL> factoryUrls,
+            Set<PluginFactoryIdentifier> factoryIdentifiers,
             String factoryId,
             int parallelism,
             int configIndex) {
@@ -623,6 +625,7 @@ public class MultipleTableJobConfigParser {
                         new ArrayList<>(inputActions),
                         sink,
                         factoryUrls,
+                        factoryIdentifiers,
                         actionConfig);
         handleSaveMode(sink);
         sinkAction.setParallelism(parallelism);
