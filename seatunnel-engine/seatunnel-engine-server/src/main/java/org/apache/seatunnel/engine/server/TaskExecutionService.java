@@ -263,19 +263,20 @@ public class TaskExecutionService implements DynamicMetricsProvider {
         try {
             Set<URL> jars = taskImmutableInfo.getJars();
             ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
-            Set<URL> factoryUrls = new HashSet<>();
-            Set<PluginFactoryIdentifier> factoryIdentifiers =
-                    taskImmutableInfo.getFactoryIdentifiers();
-            if (!CollectionUtils.isEmpty(jars) || !factoryIdentifiers.isEmpty()) {
-                if (!factoryIdentifiers.isEmpty()) {
-                    factoryUrls.addAll(
-                            getFactoryUrlsByIdentifierList(factoryIdentifiers, classLoader));
-                }
+//            Set<URL> factoryUrls = new HashSet<>();
+//            Set<PluginFactoryIdentifier> factoryIdentifiers =
+//                    taskImmutableInfo.getFactoryIdentifiers();
+//            if (!CollectionUtils.isEmpty(jars) || !factoryIdentifiers.isEmpty()) {
+//                if (!factoryIdentifiers.isEmpty()) {
+//                    factoryUrls.addAll(
+//                            getFactoryUrlsByIdentifierList(factoryIdentifiers, classLoader));
+//                }
+            if (!CollectionUtils.isEmpty(jars)) {
                 // Prioritize obtaining the jar package file required for the current task execution
                 // from the local,
                 // if it does not exist locally, it will be downloaded from the master node.
                 Set<URL> urls = serverConnectorPackageClient.getConnectorJarPath(jars);
-                urls.addAll(factoryUrls);
+                // urls.addAll(factoryUrls);
                 classLoader = new SeaTunnelChildFirstClassLoader(Lists.newArrayList(urls));
                 taskGroup =
                         CustomClassLoadedObject.deserializeWithCustomClassLoader(

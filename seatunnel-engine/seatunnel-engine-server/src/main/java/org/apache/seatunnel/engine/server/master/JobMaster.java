@@ -204,13 +204,13 @@ public class JobMaster {
 
         List<URL> jarsUrl = jobImmutableInformation.getPluginJarsUrls();
 
-        Set<PluginFactoryIdentifier> factoryIdentifiers =
-                jobImmutableInformation.getFactoryIdentifiers();
-        if (!factoryIdentifiers.isEmpty()) {
-            jarsUrl.addAll(
-                    getFactoryUrlsByIdentifierList(
-                            factoryIdentifiers, Thread.currentThread().getContextClassLoader()));
-        }
+//        Set<PluginFactoryIdentifier> factoryIdentifiers =
+//                jobImmutableInformation.getFactoryIdentifiers();
+//        if (!factoryIdentifiers.isEmpty()) {
+//            jarsUrl.addAll(
+//                    getFactoryUrlsByIdentifierList(
+//                            factoryIdentifiers, Thread.currentThread().getContextClassLoader()));
+//        }
 
         classLoader = new SeaTunnelChildFirstClassLoader(jarsUrl);
         logicalDag =

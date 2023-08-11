@@ -17,6 +17,9 @@
 
 package org.apache.seatunnel.engine.core.parse;
 
+import com.google.common.collect.Lists;
+import org.apache.seatunnel.plugin.discovery.seatunnel.SeaTunnelSourcePluginDiscovery;
+import org.apache.seatunnel.plugin.discovery.seatunnel.SeaTunnelTransformPluginDiscovery;
 import org.apache.seatunnel.shade.com.typesafe.config.Config;
 
 import org.apache.seatunnel.api.common.CommonOptions;
@@ -314,6 +317,7 @@ public class MultipleTableJobConfigParser {
                                 catalogTables, readonlyConfig, classLoader, factoryId);
 
         Set<URL> factoryUrls = new HashSet<>();
+        factoryUrls.addAll(getSourcePluginJarPaths(sourceConfig));
         Set<PluginFactoryIdentifier> factoryIdentifiers =
                 getFactoryIdentifiers(readonlyConfig, TableSourceFactory.class, factoryId);
         factoryIdentifierSet.addAll(factoryIdentifiers);
@@ -371,6 +375,7 @@ public class MultipleTableJobConfigParser {
         final String factoryId = getFactoryId(readonlyConfig);
         // get jar urls
         Set<URL> jarUrls = new HashSet<>();
+        jarUrls.addAll(getTransformPluginJarPaths(config));
         Set<PluginFactoryIdentifier> factoryIdentifiers =
                 getFactoryIdentifiers(readonlyConfig, TableTransformFactory.class, factoryId);
         factoryIdentifierSet.addAll(factoryIdentifiers);
@@ -537,6 +542,7 @@ public class MultipleTableJobConfigParser {
 
         // get jar urls
         Set<URL> jarUrls = new HashSet<>();
+        jarUrls.addAll(getSinkPluginJarPaths(sinkConfig));
         Set<PluginFactoryIdentifier> factoryIdentifiers =
                 getFactoryIdentifiers(readonlyConfig, TableSinkFactory.class, factoryId);
         factoryIdentifierSet.addAll(factoryIdentifiers);
@@ -638,5 +644,41 @@ public class MultipleTableJobConfigParser {
             DataSaveMode dataSaveMode = saveModeSink.getUserConfigSaveMode();
             saveModeSink.handleSaveMode(dataSaveMode);
         }
+    }
+
+    private List<URL> getSourcePluginJarPaths(Config sourceConfig) {
+        SeaTunnelSourcePluginDiscovery sourcePluginDiscovery =
+                new SeaTunnelSourcePluginDiscovery();
+        PluginIdentifier pluginIdentifier =
+                PluginIdentifier.of(
+                        CollectionConstants.SEATUNNEL_PLUGIN,
+                        CollectionConstants.SOURCE_PLUGIN,
+                        sourceConfig.getString(CollectionConstants.PLUGIN_NAME));
+        List<URL> pluginJarPaths = sourcePluginDiscovery.getPluginJarPaths(Lists.newArrayList(pluginIdentifier));
+        return pluginJarPaths;
+    }
+
+    private List<URL> getTransformPluginJarPaths(Config transformConfig) {
+        SeaTunnelTransformPluginDiscovery transformPluginDiscovery =
+                new SeaTunnelTransformPluginDiscovery();
+        PluginIdentifier pluginIdentifier =
+                PluginIdentifier.of(
+                        CollectionConstants.SEATUNNEL_PLUGIN,
+                        CollectionConstants.TRANSFORM_PLUGIN,
+                        transformConfig.getString(CollectionConstants.PLUGIN_NAME));
+        List<URL> pluginJarPaths = transformPluginDiscovery.getPluginJarPaths(Lists.newArrayList(pluginIdentifier));
+        return pluginJarPaths;
+    }
+
+    private List<URL> getSinkPluginJarPaths(Config sinkConfig) {
+        SeaTunnelSinkPluginDiscovery sinkPluginDiscovery =
+                new SeaTunnelSinkPluginDiscovery();
+        PluginIdentifier pluginIdentifier =
+                PluginIdentifier.of(
+                        CollectionConstants.SEATUNNEL_PLUGIN,
+                        CollectionConstants.SINK_PLUGIN,
+                        sinkConfig.getString(CollectionConstants.PLUGIN_NAME));
+        List<URL> pluginJarPaths = sinkPluginDiscovery.getPluginJarPaths(Lists.newArrayList(pluginIdentifier));
+        return pluginJarPaths;
     }
 }
