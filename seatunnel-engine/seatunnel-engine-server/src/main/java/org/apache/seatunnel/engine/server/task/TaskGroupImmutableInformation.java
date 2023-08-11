@@ -59,6 +59,7 @@ public class TaskGroupImmutableInformation implements IdentifiedDataSerializable
     public void writeData(ObjectDataOutput out) throws IOException {
         out.writeLong(executionId);
         out.writeObject(jars);
+        out.writeObject(factoryIdentifiers);
         IOUtil.writeData(out, group);
     }
 
@@ -66,6 +67,7 @@ public class TaskGroupImmutableInformation implements IdentifiedDataSerializable
     public void readData(ObjectDataInput in) throws IOException {
         executionId = in.readLong();
         jars = in.readObject();
+        factoryIdentifiers = in.readObject();
         group = IOUtil.readData(in);
     }
 }
