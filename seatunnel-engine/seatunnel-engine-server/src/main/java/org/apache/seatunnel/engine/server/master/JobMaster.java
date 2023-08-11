@@ -38,7 +38,6 @@ import org.apache.seatunnel.engine.core.job.JobInfo;
 import org.apache.seatunnel.engine.core.job.JobResult;
 import org.apache.seatunnel.engine.core.job.JobStatus;
 import org.apache.seatunnel.engine.core.job.PipelineStatus;
-import org.apache.seatunnel.engine.core.job.PluginFactoryIdentifier;
 import org.apache.seatunnel.engine.server.SeaTunnelServer;
 import org.apache.seatunnel.engine.server.checkpoint.CheckpointManager;
 import org.apache.seatunnel.engine.server.checkpoint.CheckpointPlan;
@@ -82,13 +81,11 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.stream.Collectors;
 
 import static com.hazelcast.jet.impl.util.ExceptionUtil.withTryCatch;
-import static org.apache.seatunnel.engine.core.parse.ConfigParserUtil.getFactoryUrlsByIdentifierList;
 
 public class JobMaster {
     private static final ILogger LOGGER = Logger.getLogger(JobMaster.class);
@@ -204,13 +201,14 @@ public class JobMaster {
 
         List<URL> jarsUrl = jobImmutableInformation.getPluginJarsUrls();
 
-//        Set<PluginFactoryIdentifier> factoryIdentifiers =
-//                jobImmutableInformation.getFactoryIdentifiers();
-//        if (!factoryIdentifiers.isEmpty()) {
-//            jarsUrl.addAll(
-//                    getFactoryUrlsByIdentifierList(
-//                            factoryIdentifiers, Thread.currentThread().getContextClassLoader()));
-//        }
+        //        Set<PluginFactoryIdentifier> factoryIdentifiers =
+        //                jobImmutableInformation.getFactoryIdentifiers();
+        //        if (!factoryIdentifiers.isEmpty()) {
+        //            jarsUrl.addAll(
+        //                    getFactoryUrlsByIdentifierList(
+        //                            factoryIdentifiers,
+        // Thread.currentThread().getContextClassLoader()));
+        //        }
 
         classLoader = new SeaTunnelChildFirstClassLoader(jarsUrl);
         logicalDag =

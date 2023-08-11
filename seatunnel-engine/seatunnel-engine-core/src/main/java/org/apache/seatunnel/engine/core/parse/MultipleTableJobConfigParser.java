@@ -17,9 +17,6 @@
 
 package org.apache.seatunnel.engine.core.parse;
 
-import com.google.common.collect.Lists;
-import org.apache.seatunnel.plugin.discovery.seatunnel.SeaTunnelSourcePluginDiscovery;
-import org.apache.seatunnel.plugin.discovery.seatunnel.SeaTunnelTransformPluginDiscovery;
 import org.apache.seatunnel.shade.com.typesafe.config.Config;
 
 import org.apache.seatunnel.api.common.CommonOptions;
@@ -61,11 +58,14 @@ import org.apache.seatunnel.engine.core.dag.actions.TransformAction;
 import org.apache.seatunnel.engine.core.job.PluginFactoryIdentifier;
 import org.apache.seatunnel.plugin.discovery.PluginIdentifier;
 import org.apache.seatunnel.plugin.discovery.seatunnel.SeaTunnelSinkPluginDiscovery;
+import org.apache.seatunnel.plugin.discovery.seatunnel.SeaTunnelSourcePluginDiscovery;
+import org.apache.seatunnel.plugin.discovery.seatunnel.SeaTunnelTransformPluginDiscovery;
 
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 
+import com.google.common.collect.Lists;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.logging.Logger;
 import lombok.extern.slf4j.Slf4j;
@@ -647,14 +647,14 @@ public class MultipleTableJobConfigParser {
     }
 
     private List<URL> getSourcePluginJarPaths(Config sourceConfig) {
-        SeaTunnelSourcePluginDiscovery sourcePluginDiscovery =
-                new SeaTunnelSourcePluginDiscovery();
+        SeaTunnelSourcePluginDiscovery sourcePluginDiscovery = new SeaTunnelSourcePluginDiscovery();
         PluginIdentifier pluginIdentifier =
                 PluginIdentifier.of(
                         CollectionConstants.SEATUNNEL_PLUGIN,
                         CollectionConstants.SOURCE_PLUGIN,
                         sourceConfig.getString(CollectionConstants.PLUGIN_NAME));
-        List<URL> pluginJarPaths = sourcePluginDiscovery.getPluginJarPaths(Lists.newArrayList(pluginIdentifier));
+        List<URL> pluginJarPaths =
+                sourcePluginDiscovery.getPluginJarPaths(Lists.newArrayList(pluginIdentifier));
         return pluginJarPaths;
     }
 
@@ -666,19 +666,20 @@ public class MultipleTableJobConfigParser {
                         CollectionConstants.SEATUNNEL_PLUGIN,
                         CollectionConstants.TRANSFORM_PLUGIN,
                         transformConfig.getString(CollectionConstants.PLUGIN_NAME));
-        List<URL> pluginJarPaths = transformPluginDiscovery.getPluginJarPaths(Lists.newArrayList(pluginIdentifier));
+        List<URL> pluginJarPaths =
+                transformPluginDiscovery.getPluginJarPaths(Lists.newArrayList(pluginIdentifier));
         return pluginJarPaths;
     }
 
     private List<URL> getSinkPluginJarPaths(Config sinkConfig) {
-        SeaTunnelSinkPluginDiscovery sinkPluginDiscovery =
-                new SeaTunnelSinkPluginDiscovery();
+        SeaTunnelSinkPluginDiscovery sinkPluginDiscovery = new SeaTunnelSinkPluginDiscovery();
         PluginIdentifier pluginIdentifier =
                 PluginIdentifier.of(
                         CollectionConstants.SEATUNNEL_PLUGIN,
                         CollectionConstants.SINK_PLUGIN,
                         sinkConfig.getString(CollectionConstants.PLUGIN_NAME));
-        List<URL> pluginJarPaths = sinkPluginDiscovery.getPluginJarPaths(Lists.newArrayList(pluginIdentifier));
+        List<URL> pluginJarPaths =
+                sinkPluginDiscovery.getPluginJarPaths(Lists.newArrayList(pluginIdentifier));
         return pluginJarPaths;
     }
 }

@@ -27,7 +27,6 @@ import org.apache.seatunnel.engine.common.config.server.ThreadShareMode;
 import org.apache.seatunnel.engine.common.exception.JobNotFoundException;
 import org.apache.seatunnel.engine.common.loader.SeaTunnelChildFirstClassLoader;
 import org.apache.seatunnel.engine.common.utils.PassiveCompletableFuture;
-import org.apache.seatunnel.engine.core.job.PluginFactoryIdentifier;
 import org.apache.seatunnel.engine.server.exception.TaskGroupContextNotFoundException;
 import org.apache.seatunnel.engine.server.execution.ExecutionState;
 import org.apache.seatunnel.engine.server.execution.ProgressState;
@@ -70,7 +69,6 @@ import java.io.IOException;
 import java.net.URL;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -108,7 +106,6 @@ import static org.apache.seatunnel.api.common.metrics.MetricTags.PIPELINE_ID;
 import static org.apache.seatunnel.api.common.metrics.MetricTags.TASK_GROUP_ID;
 import static org.apache.seatunnel.api.common.metrics.MetricTags.TASK_GROUP_LOCATION;
 import static org.apache.seatunnel.api.common.metrics.MetricTags.TASK_ID;
-import static org.apache.seatunnel.engine.core.parse.ConfigParserUtil.getFactoryUrlsByIdentifierList;
 
 /** This class is responsible for the execution of the Task */
 public class TaskExecutionService implements DynamicMetricsProvider {
@@ -263,14 +260,15 @@ public class TaskExecutionService implements DynamicMetricsProvider {
         try {
             Set<URL> jars = taskImmutableInfo.getJars();
             ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
-//            Set<URL> factoryUrls = new HashSet<>();
-//            Set<PluginFactoryIdentifier> factoryIdentifiers =
-//                    taskImmutableInfo.getFactoryIdentifiers();
-//            if (!CollectionUtils.isEmpty(jars) || !factoryIdentifiers.isEmpty()) {
-//                if (!factoryIdentifiers.isEmpty()) {
-//                    factoryUrls.addAll(
-//                            getFactoryUrlsByIdentifierList(factoryIdentifiers, classLoader));
-//                }
+            //            Set<URL> factoryUrls = new HashSet<>();
+            //            Set<PluginFactoryIdentifier> factoryIdentifiers =
+            //                    taskImmutableInfo.getFactoryIdentifiers();
+            //            if (!CollectionUtils.isEmpty(jars) || !factoryIdentifiers.isEmpty()) {
+            //                if (!factoryIdentifiers.isEmpty()) {
+            //                    factoryUrls.addAll(
+            //                            getFactoryUrlsByIdentifierList(factoryIdentifiers,
+            // classLoader));
+            //                }
             if (!CollectionUtils.isEmpty(jars)) {
                 // Prioritize obtaining the jar package file required for the current task execution
                 // from the local,
