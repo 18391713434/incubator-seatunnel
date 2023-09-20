@@ -92,6 +92,11 @@ public class ClientExecuteCommand implements Command<ClientCommandArgs> {
             if (StringUtils.isNotEmpty(clusterName)) {
                 clientConfig.setClusterName(clusterName);
             }
+            boolean enableUploadConnectorJarPackage =
+                    clientCommandArgs.isEnableUploadConnectorJarPackage();
+            clientConfig
+                    .getProperties()
+                    .put("enableUploadConnectorJarPackage", enableUploadConnectorJarPackage);
             engineClient = new SeaTunnelClient(clientConfig);
             if (clientCommandArgs.isListJob()) {
                 String jobStatus = engineClient.getJobClient().listJobStatus(true);

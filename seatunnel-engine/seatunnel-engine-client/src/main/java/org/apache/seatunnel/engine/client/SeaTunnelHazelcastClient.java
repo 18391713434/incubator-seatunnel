@@ -132,6 +132,10 @@ public class SeaTunnelHazelcastClient {
         return requestAndGetCompletableFuture(masterUuid, request);
     }
 
+    public HazelcastClientInstanceImpl getHazelcastClient() {
+        return hazelcastClient;
+    }
+
     public void shutdown() {
         if (hazelcastClient != null) {
             hazelcastClient.shutdown();

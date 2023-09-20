@@ -33,6 +33,7 @@ import java.io.File;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
@@ -84,37 +85,49 @@ public class JobExecutionEnvironment extends AbstractJobEnvironment {
     protected LogicalDag getLogicalDag() {
         ImmutablePair<List<Action>, Set<URL>> immutablePair = getJobConfigParser().parse();
         actions.addAll(immutablePair.getLeft());
-        // 如果优化Zeta任务提交流程
-        //
-        //        if () {
-        Set<ConnectorJarIdentifier> commonJarIdentifiers =
-                connectorPackageClient.uploadCommonPluginJars(
-                        Long.parseLong(jobConfig.getJobContext().getJobId()), commonPluginJars);
-        Set<URL> commonPluginJarUrls = getJarUrlsFromIdentifiers(commonJarIdentifiers);
-        Set<ConnectorJarIdentifier> pluginJarIdentifiers = new HashSet<>();
-        transformActionPluginJarUrls(actions, pluginJarIdentifiers);
-        Set<URL> connectorPluginJarUrls = getJarUrlsFromIdentifiers(pluginJarIdentifiers);
-        connectorJarIdentifiers.addAll(commonJarIdentifiers);
-        connectorJarIdentifiers.addAll(pluginJarIdentifiers);
-        jarUrls.addAll(commonPluginJarUrls);
-        jarUrls.addAll(connectorPluginJarUrls);
-        actions.forEach(
-                action -> {
-                    addCommonPluginJarsToAction(action, commonPluginJarUrls, commonJarIdentifiers);
-                });
-        actions.forEach(
-                action -> {
-                    org.apache.seatunnel.engine.core.dag.actions.Config config = action.getConfig();
-                });
-        //        } else {
-        //            jarUrls.addAll(commonPluginJars);
-        //            jarUrls.addAll(immutablePair.getRight());
-        //            actions.forEach(
-        //                    action -> {
-        //                        addCommonPluginJarsToAction(action, new
-        // HashSet<>(commonPluginJars), Collections.emptySet());
-        //                    });
-        //        }
+        // Enable upload connector jar package to engine server, automatically upload connector Jar
+        // packages
+        // and dependent third-party Jar packages to the server before job execution.
+        // Enabling this configuration does not require the server to hold all connector Jar
+        // packages.
+        boolean enableUploadConnectorJarPackage =
+                (boolean)
+                        seaTunnelHazelcastClient
+                                .getHazelcastClient()
+                                .getClientConfig()
+                                .getProperties()
+                                .get("enableUploadConnectorJarPackage");
+        if (enableUploadConnectorJarPackage == true) {
+            Set<ConnectorJarIdentifier> commonJarIdentifiers =
+                    connectorPackageClient.uploadCommonPluginJars(
+                            Long.parseLong(jobConfig.getJobContext().getJobId()), commonPluginJars);
+            Set<URL> commonPluginJarUrls = getJarUrlsFromIdentifiers(commonJarIdentifiers);
+            Set<ConnectorJarIdentifier> pluginJarIdentifiers = new HashSet<>();
+            transformActionPluginJarUrls(actions, pluginJarIdentifiers);
+            Set<URL> connectorPluginJarUrls = getJarUrlsFromIdentifiers(pluginJarIdentifiers);
+            connectorJarIdentifiers.addAll(commonJarIdentifiers);
+            connectorJarIdentifiers.addAll(pluginJarIdentifiers);
+            jarUrls.addAll(commonPluginJarUrls);
+            jarUrls.addAll(connectorPluginJarUrls);
+            actions.forEach(
+                    action -> {
+                        addCommonPluginJarsToAction(
+                                action, commonPluginJarUrls, commonJarIdentifiers);
+                    });
+            actions.forEach(
+                    action -> {
+                        org.apache.seatunnel.engine.core.dag.actions.Config config =
+                                action.getConfig();
+                    });
+        } else {
+            jarUrls.addAll(commonPluginJars);
+            jarUrls.addAll(immutablePair.getRight());
+            actions.forEach(
+                    action -> {
+                        addCommonPluginJarsToAction(
+                                action, new HashSet<>(commonPluginJars), Collections.emptySet());
+                    });
+        }
         return getLogicalDagGenerator().generate();
     }
 

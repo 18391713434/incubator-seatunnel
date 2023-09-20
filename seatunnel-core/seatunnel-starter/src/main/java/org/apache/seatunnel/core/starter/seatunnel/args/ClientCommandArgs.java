@@ -65,6 +65,15 @@ public class ClientCommandArgs extends AbstractCommandArgs {
     private String clusterName;
 
     @Parameter(
+            names = {"-up", "--enable-upload-connector-jar-package"},
+            description =
+                    "Enable upload connector jar package to engine server,"
+                            + " automatically upload connector Jar packages and dependent third-party Jar packages"
+                            + " to the server before job execution."
+                            + " Enabling this configuration does not require the server to hold all connector Jar packages")
+    private boolean enableUploadConnectorJarPackage = false;
+
+    @Parameter(
             names = {"-j", "--job-id"},
             description = "Get job status by JobId")
     private String jobId;
