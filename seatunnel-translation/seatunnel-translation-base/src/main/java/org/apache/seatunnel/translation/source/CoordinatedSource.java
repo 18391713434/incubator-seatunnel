@@ -132,7 +132,10 @@ public class CoordinatedSource<T, SplitT extends SourceSplit, StateT extends Ser
         executorService =
                 ThreadPoolExecutorFactory.createScheduledThreadPoolExecutor(
                         parallelism, "parallel-split-enumerator-executor");
+        // 启动动态切片发现等，分片枚举器开启开启之后的初始化工作
         splitEnumerator.open();
+        // Add a split back to the split enumerator. It will only happen when a {@link SourceReader}
+        // fails and there are splits assigned to it after the last successful checkpoint.
         restoredSplitStateMap.forEach(
                 (subtaskId, splits) -> {
                     splitEnumerator.addSplitsBack(splits, subtaskId);

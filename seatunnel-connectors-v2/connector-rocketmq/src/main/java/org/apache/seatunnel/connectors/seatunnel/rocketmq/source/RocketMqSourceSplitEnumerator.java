@@ -79,6 +79,12 @@ public class RocketMqSourceSplitEnumerator
 
     @SuppressWarnings("checkstyle:MagicNumber")
     private static int getSplitOwner(MessageQueue messageQueue, int numReaders) {
+//        messageQueue.getQueueId() 获取消息队列的队列 ID。
+//        messageQueue.getQueueId() * 31 将队列 ID 乘以 31。这里的 31 是一个常用的哈希乘数，目的是增加计算结果的分散性。
+//        & 0x7FFFFFFF 将结果与 0x7FFFFFFF（即 2147483647）按位与操作，确保结果为非负整数。
+//        % numReaders 将结果对读取器的总数取模，得到一个在 0 到 numReaders-1 之间的整数，表示初始的读取器索引。
+//        startIndex + messageQueue.getQueueId() 在 startIndex 的基础上再加上消息队列的 ID，进一步分散队列的分配。
+//        % numReaders 再次取模，确保最终的结果仍在 0 到 numReaders-1 之间，得到负责处理该 MessageQueue 的读取器的 ID。
         int startIndex = ((messageQueue.getQueueId() * 31) & 0x7FFFFFFF) % numReaders;
         return (startIndex + messageQueue.getQueueId()) % numReaders;
     }
@@ -99,6 +105,7 @@ public class RocketMqSourceSplitEnumerator
                                 thread.setName("RocketMq-messageQueue-dynamic-discovery");
                                 return thread;
                             });
+            // 动态切片发现
             this.scheduledFuture =
                     executor.scheduleWithFixedDelay(
                             () -> {
@@ -199,6 +206,7 @@ public class RocketMqSourceSplitEnumerator
                         split -> {
                             if (!assignedSplit.containsKey(split.getMessageQueue())) {
                                 if (!pendingSplit.containsKey(split.getMessageQueue())) {
+                                    // 所有Split全部放入pendingSplit中
                                     pendingSplit.put(split.getMessageQueue(), split);
                                 }
                             }
@@ -206,7 +214,10 @@ public class RocketMqSourceSplitEnumerator
     }
 
     private Set<RocketMqSourceSplit> getTopicInfo() {
+        // 在RocketMQ中MessageQueue相当于Kafka中的Partition
+        // 每一个Partition分区最多被一个Kafka消费者进行消费
         log.info("Configured topics: {}", metadata.getTopics());
+        // 获取每一个Topic中每个Partition对应的每个Offset
         List<Map<MessageQueue, TopicOffset>> offsetTopics =
                 RocketMqAdminUtil.offsetTopics(metadata.getBaseConfig(), metadata.getTopics());
         Set<RocketMqSourceSplit> sourceSplits = Sets.newConcurrentHashSet();
@@ -330,6 +341,7 @@ public class RocketMqSourceSplitEnumerator
     }
 
     private synchronized void assignSplit() {
+        // 将Partition按照hash到不同的并行度中，每个并行度都对应一个reader进行数据读取
         Map<Integer, List<RocketMqSourceSplit>> readySplit = new HashMap<>(Common.COLLECTION_SIZE);
         for (int taskID = 0; taskID < context.currentParallelism(); taskID++) {
             readySplit.computeIfAbsent(taskID, id -> new ArrayList<>());
@@ -339,6 +351,7 @@ public class RocketMqSourceSplitEnumerator
                 .forEach(
                         s -> {
                             if (!assignedSplit.containsKey(s.getKey())) {
+                                // reader个数等于并行度
                                 readySplit
                                         .get(
                                                 getSplitOwner(
@@ -346,7 +359,9 @@ public class RocketMqSourceSplitEnumerator
                                         .add(s.getValue());
                             }
                         });
+        // assignSplit会将Split分片放入到对应的readerMap
         readySplit.forEach(context::assignSplit);
+        // 将分片放入assignedSplit用于后续判断当前分片是否已经分配给reader进行数据读取
         assignedSplit.putAll(pendingSplit);
         pendingSplit.clear();
     }

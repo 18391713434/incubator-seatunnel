@@ -96,6 +96,7 @@ public class RocketMqSourceReader implements SourceReader<SeaTunnelRow, RocketMq
             return;
         }
         while (pendingPartitionsQueue.size() != 0) {
+            // 将阻塞队列中的分片数据加入到sourceSplits
             sourceSplits.add(pendingPartitionsQueue.poll());
         }
         sourceSplits.forEach(
@@ -103,6 +104,7 @@ public class RocketMqSourceReader implements SourceReader<SeaTunnelRow, RocketMq
                         consumerThreads.computeIfAbsent(
                                 sourceSplit.getMessageQueue(),
                                 s -> {
+                                    // 启动消费者线程进行异步消费
                                     RocketMqConsumerThread thread =
                                             new RocketMqConsumerThread(metadata);
                                     executorService.submit(thread);
@@ -112,6 +114,7 @@ public class RocketMqSourceReader implements SourceReader<SeaTunnelRow, RocketMq
                 sourceSplit -> {
                     CompletableFuture<Void> completableFuture = new CompletableFuture<>();
                     try {
+                        // 将分片放入到启动的消费者线程中的阻塞队列中，消费者会从阻塞队列中取数据
                         consumerThreads
                                 .get(sourceSplit.getMessageQueue())
                                 .getTasks()
@@ -123,6 +126,7 @@ public class RocketMqSourceReader implements SourceReader<SeaTunnelRow, RocketMq
                                                                 sourceSplit.getMessageQueue());
                                                 consumer.assign(messageQueues);
                                                 if (sourceSplit.getStartOffset() >= 0) {
+                                                    // 重设Partition分区消费偏移量Offset
                                                     consumer.seek(
                                                             sourceSplit.getMessageQueue(),
                                                             sourceSplit.getStartOffset());
@@ -138,6 +142,7 @@ public class RocketMqSourceReader implements SourceReader<SeaTunnelRow, RocketMq
                                                             sourceSplit.getStartOffset(),
                                                             sourceSplit.getEndOffset());
                                                 }
+                                                // 按照Topic、Broker，Partition对消息进行分组
                                                 Map<MessageQueue, List<MessageExt>> groupRecords =
                                                         records.stream()
                                                                 .collect(
@@ -151,12 +156,14 @@ public class RocketMqSourceReader implements SourceReader<SeaTunnelRow, RocketMq
                                                                                                 record
                                                                                                         .getQueueId())));
                                                 for (MessageQueue messageQueue : messageQueues) {
+                                                    // 按照partition的顺序进行消息写入
                                                     if (!groupRecords.containsKey(messageQueue)) {
                                                         continue;
                                                     }
                                                     List<MessageExt> messages =
                                                             groupRecords.get(messageQueue);
                                                     for (MessageExt record : messages) {
+                                                        // 将消息写入到output中进行收集
                                                         deserializationSchema.deserialize(
                                                                 record.getBody(), output);
                                                         if (Boundedness.BOUNDED.equals(
@@ -193,6 +200,8 @@ public class RocketMqSourceReader implements SourceReader<SeaTunnelRow, RocketMq
 
         if (Boundedness.BOUNDED.equals(context.getBoundedness())) {
             // signal to the source that we have reached the end of the data.
+            // 如果数据流是有界的 (Boundedness.BOUNDED)，且所有分区的消息都已消费完毕
+            // 调用 context.signalNoMoreElement() 通知源已经没有更多数据可消费
             context.signalNoMoreElement();
         }
     }
@@ -215,6 +224,7 @@ public class RocketMqSourceReader implements SourceReader<SeaTunnelRow, RocketMq
         splits.forEach(
                 s -> {
                     try {
+                        // 分片枚举器得到的分片分配到当前reader上，在这里加入到pendingPartitionsQueue阻塞队列中
                         pendingPartitionsQueue.put(s);
                     } catch (InterruptedException e) {
                         throw new RocketMqConnectorException(
